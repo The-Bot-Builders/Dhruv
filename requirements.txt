@@ -1,0 +1,16 @@
+slack-bolt==1.18.0
+python-dotenv==1.0.0
+requests==2.31.0
+langchain==0.0.200
+pypdf==3.9.1
+openai==0.27.7
+urllib3==1.26.6
+pgvector==0.1.8
+psycopg2-binary==2.9.6
+tiktoken==0.4.0
+sentence-transformers==2.2.2
+apify-client==1.2.2
+urlextract==1.8.0
+pyyaml==5.4.1
+flask==2.3.2
+waitress==2.1.2

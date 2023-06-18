@@ -1,0 +1,5 @@
+#!/bin/bash
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 088650938035.dkr.ecr.us-east-1.amazonaws.com/tom_the_slack_bot &&
+docker build -t tom_the_slack_bot:latest . &&
+docker tag tom_the_slack_bot:latest 088650938035.dkr.ecr.us-east-1.amazonaws.com/tom_the_slack_bot:latest &&
+docker push 088650938035.dkr.ecr.us-east-1.amazonaws.com/tom_the_slack_bot:latest
