@@ -5,7 +5,7 @@ import os
 
 from slack_bolt import App
 from slack_bolt.adapter.flask import SlackRequestHandler
-from flask import Flask, request
+from flask import Flask, request, render_template
 from waitress import serve
 
 import json
@@ -68,9 +68,11 @@ def update_home_tab(client, event, logger):
     except Exception as e:
         logger.error(f"Error publishing home tab: {e}")
 
-
 @app.event("message")
 def message_handler(client, message, event, say):
+    team_info = client.get("team_info", None)
+    team_id = team_info["team"]["id"] if team_info else None
+    
     thread_ts = event.get("thread_ts", None) or event["ts"]
 
     urlExtrator = URLExtract()
@@ -111,6 +113,26 @@ handler = SlackRequestHandler(app)
 @flask_app.route("/slack/events", methods=["POST"])
 def slack_events():
     return handler.handle(request)
+
+@flask_app.route('/', methods=["GET"])
+def index():
+    return render_template('index.html')
+
+@flask_app.route('/slack/oauth', methods=["GET"])
+def slack_oauth_redirect():
+    code = request.args.get('code')
+    response = requests.get(
+        'https://slack.com/api/oauth.v2.access?client_id={}&client_secret={}&code={}' % (
+            os.environ.get("SLACK_CLIENT_ID"),
+            os.environ.get("SLACK_CLIENT_SECRET"),
+            code
+        )
+    )
+    response_json = response.json()
+
+    team_name = response_json['team']['name']
+    team_id = response_json['team']['id']
+    access_token = response_json['access_token']
 
 @flask_app.route("/healthcheck", methods=["GET"])
 def healthcheck():
