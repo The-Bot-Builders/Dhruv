@@ -41,7 +41,16 @@ state_store.metadata.create_all(engine)
 oauth_settings = OAuthSettings(
     client_id=os.environ.get("SLACK_CLIENT_ID"),
     client_secret=os.environ.get("SLACK_CLIENT_SECRET"),
-    scopes=["chat:write", "commands"],
+    scopes=[
+        "app_mentions:read", 
+        "channels:history",
+        "channels:join",
+        "chat:write",
+        "files:read",
+        "im:history",
+        "im:read",
+        "im:write"
+    ],
     installation_store=installation_store,
     state_store=state_store,
 )
