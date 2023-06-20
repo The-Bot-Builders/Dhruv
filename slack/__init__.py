@@ -105,9 +105,6 @@ def update_home_tab(client, event, logger):
 
 @app.event("message")
 def message_handler(client, message, event, say):
-    team_info = client.get("team_info", None)
-    team_id = team_info["team"]["id"] if team_info else None
-    
     thread_ts = event.get("thread_ts", None) or event["ts"]
 
     urlExtrator = URLExtract()
