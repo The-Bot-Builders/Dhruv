@@ -104,7 +104,7 @@ def update_home_tab(client, event, logger):
         logger.error(f"Error publishing home tab: {e}")
 
 @app.event("message")
-def message_handler(client, message, event, say):
+def message_handler(context, client, message, event, say):
     thread_ts = event.get("thread_ts", None) or event["ts"]
 
     urlExtrator = URLExtract()
@@ -124,7 +124,7 @@ def message_handler(client, message, event, say):
             file_name = file_url.split("/")[-1]
             say(f"Learning the content of the file named {file_name}...", thread_ts=thread_ts)
 
-            response = requests.get(file_url, headers={'Authorization': f'Bearer {os.environ.get("SLACK_BOT_TOKEN")}'})
+            response = requests.get(file_url, headers={'Authorization': f'Bearer {context["authorize_result"]["bot_token"]}'})
             with TempFileManager(file_name) as (temp_file_path, temp_file):
                 temp_file.write(response.content)
                 
