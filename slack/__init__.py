@@ -49,7 +49,10 @@ oauth_settings = OAuthSettings(
         "files:read",
         "im:history",
         "im:read",
-        "im:write"
+        "im:write",
+        "groups:history",
+        "groups:read",
+        "groups:write"
     ],
     installation_store=installation_store,
     state_store=state_store,
