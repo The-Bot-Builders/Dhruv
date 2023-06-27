@@ -44,7 +44,8 @@ class URLProcessor:
             embedding=HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2'),
             documents=texts,
             collection_name=index_md5,
-            connection_string=CONNECTION_STRING,
+            pre_delete_collection=False,
+            connection_string=CONNECTION_STRING
         )
 
 # Used to testing

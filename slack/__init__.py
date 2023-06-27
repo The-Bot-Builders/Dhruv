@@ -32,12 +32,12 @@ installation_store = SQLAlchemyInstallationStore(
     client_id=os.environ.get("SLACK_CLIENT_ID"),
     engine=engine
 )
-installation_store.create_tables()
+# installation_store.create_tables()
 state_store = SQLAlchemyOAuthStateStore(
     expiration_seconds=600,
     engine=engine
 )
-state_store.metadata.create_all(engine)
+# state_store.metadata.create_all(engine)
 oauth_settings = OAuthSettings(
     client_id=os.environ.get("SLACK_CLIENT_ID"),
     client_secret=os.environ.get("SLACK_CLIENT_SECRET"),
