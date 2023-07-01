@@ -32,27 +32,24 @@ installation_store = SQLAlchemyInstallationStore(
     client_id=os.environ.get("SLACK_CLIENT_ID"),
     engine=engine
 )
-# installation_store.create_tables()
+installation_store.create_tables()
 state_store = SQLAlchemyOAuthStateStore(
     expiration_seconds=600,
     engine=engine
 )
-# state_store.metadata.create_all(engine)
+state_store.metadata.create_all(engine)
 oauth_settings = OAuthSettings(
     client_id=os.environ.get("SLACK_CLIENT_ID"),
     client_secret=os.environ.get("SLACK_CLIENT_SECRET"),
     scopes=[
         "app_mentions:read", 
         "channels:history",
-        "channels:join",
         "chat:write",
         "files:read",
         "im:history",
         "im:read",
         "im:write",
-        "groups:history",
-        "groups:read",
-        "groups:write"
+        "groups:history"
     ],
     installation_store=installation_store,
     state_store=state_store,
