@@ -107,7 +107,7 @@ def update_home_tab(client, event, logger):
 def app_mentions_handler(context, client, message, event, say):
     common_message_handler(context, client, message, event, say)
 
-@app.event("message.im")
+@app.event("message.app_home")
 def im_message_handler(context, client, message, event, say):
     common_message_handler(context, client, message, event, say)
 

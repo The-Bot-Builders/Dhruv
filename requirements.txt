@@ -11,7 +11,7 @@ tiktoken==0.4.0
 sentence-transformers==2.2.2
 apify-client==1.2.2
 urlextract==1.8.0
-pyyaml==5.4.1
+pyyaml==6.0.1
 flask==2.3.2
 waitress==2.1.2
 SQLAlchemy==2.0.16
