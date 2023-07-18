@@ -103,8 +103,15 @@ def update_home_tab(client, event, logger):
     except Exception as e:
         logger.error(f"Error publishing home tab: {e}")
 
-@app.event("message")
-def message_handler(context, client, message, event, say):
+@app.event("app_mentions")
+def app_mentions_handler(context, client, message, event, say):
+    common_message_handler(context, client, message, event, say)
+
+@app.event("message.im")
+def im_message_handler(context, client, message, event, say):
+    common_message_handler(context, client, message, event, say)
+
+def common_message_handler(context, client, message, event, say):
     thread_ts = event.get("thread_ts", None) or event["ts"]
 
     urlExtrator = URLExtract()
@@ -138,5 +145,6 @@ def message_handler(context, client, message, event, say):
     else:
         answer = QAProcessor.process(message['text'], thread_ts)
         say(text=answer, thread_ts=thread_ts)
+
 
 handler = SlackRequestHandler(app)
