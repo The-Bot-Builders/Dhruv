@@ -103,20 +103,22 @@ def update_home_tab(client, event, logger):
     except Exception as e:
         logger.error(f"Error publishing home tab: {e}")
 
-@app.event("app_mentions")
-def app_mentions_handler(context, client, message, event, say):
-    common_message_handler(context, client, message, event, say)
+@app.event("app_mention")
+def app_mention_handler(context, client, event, say):
+    common_event_handler(context, client, event, say)
 
 @app.event("message")
-def im_message_handler(context, client, message, event, say):
-    if ("channel_type" in event and event["channel_type"] == "app_home"):
-        common_message_handler(context, client, message, event, say)
+def im_message_handler(context, client, event, say):
+    channel_type = event.get("channel_type", None) or event["channel_type"]
 
-def common_message_handler(context, client, message, event, say):
+    if channel_type == "im":
+        common_event_handler(context, client, event, say)
+
+def common_event_handler(context, client, event, say):
     thread_ts = event.get("thread_ts", None) or event["ts"]
 
     urlExtrator = URLExtract()
-    urls = urlExtrator.find_urls(message['text']) if "text" in message else []
+    urls = urlExtrator.find_urls(event['text']) if "text" in event else []
     
     if (len(urls)):
         for url in urls:
@@ -124,8 +126,8 @@ def common_message_handler(context, client, message, event, say):
 
             URLProcessor.process(url, thread_ts)
             say(f"Done learning the content", thread_ts=thread_ts)
-    elif "files" in message:
-        for file in message["files"]:
+    elif "files" in event:
+        for file in event["files"]:
             file_url = file['url_private']
             file_type = file['filetype']
 
@@ -141,10 +143,10 @@ def common_message_handler(context, client, message, event, say):
                     say(f"Done learning the content", thread_ts=thread_ts)
                 else:
                     say(f"Sorry, I am not able to read this type of files yet!", thread_ts=thread_ts)
-    elif "subtype" in message:
+    elif "subtype" in event:
         return NotImplemented
     else:
-        answer = QAProcessor.process(message['text'], thread_ts)
+        answer = QAProcessor.process(event['text'], thread_ts)
         say(text=answer, thread_ts=thread_ts)
 
 
