@@ -8,6 +8,7 @@ urllib3==1.26.6
 pgvector==0.1.8
 psycopg2-binary==2.9.6
 tiktoken==0.4.0
+torch==2.0.1
 sentence-transformers==2.2.2
 apify-client==1.2.2
 urlextract==1.8.0
