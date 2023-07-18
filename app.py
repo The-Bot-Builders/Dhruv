@@ -9,8 +9,7 @@ from flask import Flask, request, render_template
 from waitress import serve
 
 import logging
-logger = logging.getLogger('root')
-logger.setLevel(logging.INFO)
+logging.basicConfig(level=logging.INFO)
 
 # Initializes your app with your bot token and signing secret
 flask_app = Flask(__name__)
