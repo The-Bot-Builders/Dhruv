@@ -107,9 +107,10 @@ def update_home_tab(client, event, logger):
 def app_mentions_handler(context, client, message, event, say):
     common_message_handler(context, client, message, event, say)
 
-@app.event("message.app_home")
+@app.event("message")
 def im_message_handler(context, client, message, event, say):
-    common_message_handler(context, client, message, event, say)
+    if ("channel_type" in event and event["channel_type"] == "app_home"):
+        common_message_handler(context, client, message, event, say)
 
 def common_message_handler(context, client, message, event, say):
     thread_ts = event.get("thread_ts", None) or event["ts"]
