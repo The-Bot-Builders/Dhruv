@@ -3,11 +3,6 @@ import logging
 
 from slack_bolt import App
 from slack_bolt.adapter.flask import SlackRequestHandler
-from slack_bolt.oauth.oauth_settings import OAuthSettings
-from slack_sdk.oauth.installation_store.sqlalchemy import SQLAlchemyInstallationStore
-from slack_sdk.oauth.state_store.sqlalchemy import SQLAlchemyOAuthStateStore
-
-from sqlalchemy import URL, create_engine
 
 import json
 import requests
@@ -18,48 +13,65 @@ from processors.file import TempFileManager, FileProcessor
 from processors.qa import QAProcessor
 from processors.url import URLProcessor
 
-# Initializes your app with your bot token and signing secret
-url_object = URL.create(
-    "postgresql+psycopg2",
-    username=os.environ.get("DB_USERNAME"),
-    password=os.environ.get("DB_PASSWORD"),
-    host=os.environ.get("DB_URL"),
-    port=int(os.environ.get("DB_PORT")),
-    database="installations",
-)
+import logging
+logging.basicConfig(level=logging.INFO)
 
-engine = create_engine(url_object)
-installation_store = SQLAlchemyInstallationStore(
-    client_id=os.environ.get("SLACK_CLIENT_ID"),
-    engine=engine
-)
-installation_store.create_tables()
-state_store = SQLAlchemyOAuthStateStore(
-    expiration_seconds=600,
-    engine=engine
-)
-state_store.metadata.create_all(engine)
-oauth_settings = OAuthSettings(
-    client_id=os.environ.get("SLACK_CLIENT_ID"),
-    client_secret=os.environ.get("SLACK_CLIENT_SECRET"),
-    scopes=[
-        "app_mentions:read", 
-        "channels:history",
-        "chat:write",
-        "files:read",
-        "im:history",
-        "im:read",
-        "im:write",
-        "groups:history"
-    ],
-    installation_store=installation_store,
-    state_store=state_store,
-)
+stage = os.environ.get('STAGE', 'local')
+app = None
 
-app = App(
-    signing_secret=os.environ.get("SLACK_SIGNING_SECRET"),
-    oauth_settings=oauth_settings,
-)
+if stage == 'local':
+    app = App(
+        signing_secret=os.environ.get("SLACK_SIGNING_SECRET"),
+        token=os.environ.get("SLACK_BOT_TOKEN")
+    )
+else: 
+    from sqlalchemy import URL, create_engine
+    from slack_bolt.oauth.oauth_settings import OAuthSettings
+    from slack_sdk.oauth.installation_store.sqlalchemy import SQLAlchemyInstallationStore
+    from slack_sdk.oauth.state_store.sqlalchemy import SQLAlchemyOAuthStateStore
+
+    # Initializes your app with your bot token and signing secret
+    url_object = URL.create(
+        "postgresql+psycopg2",
+        username=os.environ.get("DB_USERNAME"),
+        password=os.environ.get("DB_PASSWORD"),
+        host=os.environ.get("DB_URL"),
+        port=int(os.environ.get("DB_PORT")),
+        database="installations",
+    )
+
+    engine = create_engine(url_object)
+    installation_store = SQLAlchemyInstallationStore(
+        client_id=os.environ.get("SLACK_CLIENT_ID"),
+        engine=engine
+    )
+    installation_store.create_tables()
+    state_store = SQLAlchemyOAuthStateStore(
+        expiration_seconds=600,
+        engine=engine
+    )
+    state_store.metadata.create_all(engine)
+    oauth_settings = OAuthSettings(
+        client_id=os.environ.get("SLACK_CLIENT_ID"),
+        client_secret=os.environ.get("SLACK_CLIENT_SECRET"),
+        scopes=[
+            "app_mentions:read", 
+            "channels:history",
+            "chat:write",
+            "files:read",
+            "im:history",
+            "im:read",
+            "im:write",
+            "groups:history"
+        ],
+        installation_store=installation_store,
+        state_store=state_store,
+    )
+
+    app = App(
+        signing_secret=os.environ.get("SLACK_SIGNING_SECRET"),
+        oauth_settings=oauth_settings,
+    )
 
 @app.event("app_home_opened")
 def update_home_tab(client, event, logger):

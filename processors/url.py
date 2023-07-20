@@ -4,6 +4,9 @@ load_dotenv(find_dotenv())
 import os
 import hashlib
 
+import logging
+logging.basicConfig(level=logging.INFO)
+
 from langchain.utilities import ApifyWrapper
 from langchain.document_loaders.base import Document
 

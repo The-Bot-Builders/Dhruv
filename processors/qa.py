@@ -4,6 +4,9 @@ load_dotenv(find_dotenv())
 import os
 import hashlib
 
+import logging
+logging.basicConfig(level=logging.INFO)
+
 from processors.db import CONNECTION_STRING
 from langchain.vectorstores.pgvector import PGVector, DistanceStrategy
 
@@ -12,7 +15,15 @@ from langchain.embeddings.huggingface import HuggingFaceEmbeddings
 from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
 
+from langchain.prompts import PromptTemplate
+
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+TEMPLATE = """Your name is Dhruv, and you are a smart software engineer. Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+
+{context}
+
+Question: {question}
+Helpful Answer:"""
 
 class QAProcessor:
 
@@ -35,7 +46,13 @@ class QAProcessor:
         chain = RetrievalQA.from_chain_type(
             llm=chat,
             chain_type="stuff",
-            retriever=retriever
+            retriever=retriever,
+            chain_type_kwargs={
+                "prompt": PromptTemplate(
+                    template=TEMPLATE,
+                    input_variables=["context", "question"]
+                )
+            }
         )
         answer = chain.run(question)
         return answer

@@ -1,5 +1,8 @@
 import os
 
+import logging
+logging.basicConfig(level=logging.INFO)
+
 from langchain.vectorstores.pgvector import PGVector
 
 CONNECTION_STRING = PGVector.connection_string_from_db_params(

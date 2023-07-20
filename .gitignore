@@ -3,3 +3,5 @@
 **/.classpath
 **/.env
 **/.vscode
+**/.local.env
+**/.prod.env

@@ -1,7 +1,9 @@
-from dotenv import load_dotenv, find_dotenv
-load_dotenv(find_dotenv())
-
 import os
+
+from dotenv import load_dotenv, find_dotenv
+
+env_file = '.prod.env' if os.environ.get('STAGE') == 'prod' else '.local.env'
+load_dotenv(find_dotenv(filename=env_file))
 
 from slack import handler
 

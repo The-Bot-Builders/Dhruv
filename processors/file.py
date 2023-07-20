@@ -1,6 +1,9 @@
 import os
 import hashlib
 
+import logging
+logging.basicConfig(level=logging.INFO)
+
 from langchain.document_loaders import TextLoader
 from langchain.document_loaders.csv_loader import CSVLoader
 from langchain.document_loaders import PyPDFLoader
