@@ -1,6 +1,3 @@
-from dotenv import load_dotenv, find_dotenv
-load_dotenv(find_dotenv())
-
 import os
 import hashlib
 
@@ -18,7 +15,8 @@ from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-TEMPLATE = """Your name is Dhruv, and you are a smart software engineer. Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+BOT_DESCRIPTION = f"Your name is {os.environ.get('BOT_NAME')}, and you are a smart software engineer. You are encouraging and cheerful. "
+TEMPLATE = BOT_DESCRIPTION + """Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
 
 {context}
 
