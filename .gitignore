@@ -5,3 +5,4 @@
 **/.vscode
 **/.local.env
 **/.prod.env
+**/.python-version
