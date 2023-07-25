@@ -128,24 +128,43 @@ def im_message_handler(context, client, event, say):
         common_event_handler(context, client, event, say)
 
 def common_event_handler(context, client, event, say):
+    if "subtype" in event:
+        return NotImplemented
+    
     thread_ts = event.get("thread_ts", None) or event["ts"]
 
+    has_url = False
+    has_document = False
+    has_conversation = False
+
+    text = event['text']
+
+    # Check for URL
     urlExtrator = URLExtract()
     urls = urlExtrator.find_urls(event['text']) if "text" in event else []
-    
+
     if (len(urls)):
-        for url in urls:
-            say(f"Learning the content from the URL {url}...", thread_ts=thread_ts)
+        for idx, url in enumerate(urls):
+            say(f"Checking out the link {url}. Will let you know when I am done!", thread_ts=thread_ts)
 
             URLProcessor.process(url, thread_ts)
-            say(f"Done learning the content", thread_ts=thread_ts)
-    elif "files" in event:
-        for file in event["files"]:
+
+            if idx == len(urls) - 1:
+                if len(urls) > 1:
+                    say(f"Finished reading the links.", thread_ts=thread_ts)
+                else:
+                    say(f"Finished reading the link.", thread_ts=thread_ts)
+        
+            text = text.replace(url, "")
+
+    # Check for Files
+    if "files" in event:
+        for idx, file in enumerate(event["files"]):
             file_url = file['url_private']
             file_type = file['filetype']
 
             file_name = file_url.split("/")[-1]
-            say(f"Learning the content of the file named {file_name}...", thread_ts=thread_ts)
+            say(f"Checking out the file {file_name}. Will let you know when I am done!", thread_ts=thread_ts)
 
             response = requests.get(file_url, headers={'Authorization': f'Bearer {context["authorize_result"]["bot_token"]}'})
             with TempFileManager(file_name) as (temp_file_path, temp_file):
@@ -153,14 +172,19 @@ def common_event_handler(context, client, event, say):
                 
                 processed = FileProcessor.process(file_type, temp_file_path, thread_ts)
                 if processed:
-                    say(f"Done learning the content", thread_ts=thread_ts)
+                    if idx == len(event["files"]) - 1:
+                        if len(event["files"]) > 1:
+                            say(f"Finished reading the files.", thread_ts=thread_ts)
+                        else:
+                            say(f"Finished reading the file.", thread_ts=thread_ts)
+                    
                 else:
                     say(f"Sorry, I am not able to read this type of files yet!", thread_ts=thread_ts)
-    elif "subtype" in event:
-        return NotImplemented
-    else:
-        answer = QAProcessor.process(event['text'], thread_ts)
-        say(text=answer, thread_ts=thread_ts)
+
+
+    # Check for General QA
+    answer = QAProcessor.process(text, thread_ts)
+    say(text=answer, thread_ts=thread_ts)
 
 
 handler = SlackRequestHandler(app)
