@@ -31,28 +31,32 @@ class TempFileManager:
 
 class FileProcessor:
 
+    @staticmethod
     def process(file_type, file_path, index):
         index_md5 = hashlib.md5(index.encode()).hexdigest()
 
-        pages = []
-        
-        if (file_type == 'pdf'):
-            loader = PyPDFLoader(file_path)
-            pages = loader.load_and_split()
-        elif (file_type == "text"):
-            loader = TextLoader(file_path)
-            pages = loader.load()
-        elif (file_type == "csv"):
-            loader = loader = CSVLoader(file_path=file_path)
-            pages = loader.load()
-        else:
-            return False
+        texts = None
 
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
             chunk_overlap=200
         )
-        texts = splitter.split_documents(pages)
+        
+        if (file_type == 'pdf'):
+            loader = PyPDFLoader(file_path)
+            pages = loader.load_and_split()
+            texts = splitter.split_documents(pages)
+        
+        elif (file_type == "text"):
+            loader = TextLoader(file_path)
+            pages = loader.load()
+            texts = splitter.split_documents(pages)
+
+        else:
+            return False
+
+        if texts is None:
+            return False
 
         PGVector.from_documents(
             embedding=HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2'),
@@ -61,7 +65,6 @@ class FileProcessor:
             connection_string=CONNECTION_STRING,
         )
         return True
-
 
 # Used for testing
 # if __name__ == "__main__":

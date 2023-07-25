@@ -6,6 +6,7 @@ from slack_bolt.adapter.flask import SlackRequestHandler
 
 import json
 import requests
+import re
 
 from urlextract import URLExtract
 
@@ -138,6 +139,7 @@ def common_event_handler(context, client, event, say):
     has_conversation = False
 
     text = event['text']
+    text = re.sub(r"<@[A-Z0-9]+>", "", text)
 
     # Check for URL
     urlExtrator = URLExtract()
@@ -156,6 +158,7 @@ def common_event_handler(context, client, event, say):
                     say(f"Finished reading the link.", thread_ts=thread_ts)
         
             text = text.replace(url, "")
+            text = text.strip()
 
     # Check for Files
     if "files" in event:
@@ -183,8 +186,10 @@ def common_event_handler(context, client, event, say):
 
 
     # Check for General QA
-    answer = QAProcessor.process(text, thread_ts)
-    say(text=answer, thread_ts=thread_ts)
+    if text:
+        logging.info(f"Text is {text}")
+        answer = QAProcessor.process(text, thread_ts)
+        say(text=answer, thread_ts=thread_ts)
 
 
 handler = SlackRequestHandler(app)
