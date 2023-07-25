@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv, find_dotenv
 
-env_file = '.prod.env' if os.environ.get('STAGE') == 'prod' else '.local.env'
+env_file = '.prod.env' if os.environ.get('STAGE', 'local') == 'prod' else '.local.env'
 load_dotenv(find_dotenv(filename=env_file))
 
 from slack import handler
@@ -38,4 +38,5 @@ def healthcheck():
 
 # Start your app
 if __name__ == "__main__":
+    print(f"Starting app with stage: {os.environ.get('STAGE', 'local')}")
     serve(flask_app, host='0.0.0.0', port=int(os.environ.get("PORT", 3000)))
