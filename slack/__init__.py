@@ -185,9 +185,9 @@ def common_event_handler(context, client, event, say):
 
             if idx == len(urls) - 1:
                 if len(urls) > 1:
-                    say(f"Finished reading the links.", thread_ts=thread_ts)
+                    say(f"Finished reading the links. Let me summarize what I just read.", thread_ts=thread_ts)
                 else:
-                    say(f"Finished reading the link.", thread_ts=thread_ts)
+                    say(f"Finished reading the link. Let me summarize what I just read.", thread_ts=thread_ts)
         
             text = text.replace(url, "")
             text = text.strip()
@@ -209,27 +209,24 @@ def common_event_handler(context, client, event, say):
                 if processed:
                     if idx == len(event["files"]) - 1:
                         if len(event["files"]) > 1:
-                            say(f"Finished reading the files.", thread_ts=thread_ts)
+                            say(f"Finished reading the files. Let me summarize what I just read.", thread_ts=thread_ts)
                         else:
-                            say(f"Finished reading the file.", thread_ts=thread_ts)
+                            say(f"Finished reading the file. Let me summarize what I just read.", thread_ts=thread_ts)
                     
                 else:
                     say(f"Sorry, I am not able to read this type of files yet!", thread_ts=thread_ts)
 
 
     # Check for General QA
+    question = None
     if text:
-        logging.info(f"Text is {text}")
-        answer = QAProcessor.process(text, thread_ts, team_id)
+        question = text
+    else:
+        question = "Summarize the content with words not less than 200 words."
+     
+    answer = QAProcessor.process(question, thread_ts, team_id)
+    say(text=answer, thread_ts=thread_ts)
 
-        blocks = [{
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": answer
-            }
-        }]
-        say(blocks=blocks, text=answer, thread_ts=thread_ts)
 
 
 handler = SlackRequestHandler(app)
