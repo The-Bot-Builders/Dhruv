@@ -16,7 +16,7 @@ from langchain.prompts import PromptTemplate
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 BOT_DESCRIPTION = f"Your name is {os.environ.get('BOT_NAME')}. Be friendly when you answer, and ask if you can help rather than assist."
-TEMPLATE = BOT_DESCRIPTION + """Use the following pieces of context to answer the question at the end. Use bullet points. Format your answer in markdown format.
+TEMPLATE = BOT_DESCRIPTION + """Use the following pieces of context to answer the question at the end. Use bullet points. Format your answer in Slack Markdown.
 
 {context}
 
