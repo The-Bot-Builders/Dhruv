@@ -15,11 +15,11 @@ from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-BOT_DESCRIPTION = f"Your name is {os.environ.get('BOT_NAME')}. Be friendly and direct."
+BOT_DESCRIPTION = f"Your name is {os.environ.get('BOT_NAME')}. Be friendly, direct and detailed."
 TEMPLATE = BOT_DESCRIPTION + """
 Use the following pieces of context to answer the question at the end. 
-Use bullet points to make the answer more readable.
-Also provide 3 more followup questions from the context that the user can ask that will teach them 3 different things about the text provided in the context.
+Make the answer more readable with bullet points, new paragraphs, and indentation.
+Also provide 3 more followup questions from the context that the user can ask that will teach them 3 different things about the text provided in the context and the user's question.
 
 {context}
 
