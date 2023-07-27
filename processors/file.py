@@ -8,12 +8,12 @@ from langchain.document_loaders import TextLoader
 from langchain.document_loaders.csv_loader import CSVLoader
 from langchain.document_loaders import PyPDFLoader
 
-from processors.db import CONNECTION_STRING
+from processors.db import DB
 from langchain.vectorstores.pgvector import PGVector
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.embeddings.openai import OpenAIEmbeddings
 
-from langchain.embeddings.huggingface import HuggingFaceEmbeddings
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 class TempFileManager:
 
@@ -32,7 +32,7 @@ class TempFileManager:
 class FileProcessor:
 
     @staticmethod
-    def process(file_type, file_path, index):
+    def process(file_type, file_path, index, client_id):
         index_md5 = hashlib.md5(index.encode()).hexdigest()
 
         texts = None
@@ -59,10 +59,10 @@ class FileProcessor:
             return False
 
         PGVector.from_documents(
-            embedding=HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2'),
+            embedding=OpenAIEmbeddings(),
             documents=texts,
             collection_name=index_md5,
-            connection_string=CONNECTION_STRING,
+            connection_string=DB.get_connection_string(client_id),
         )
         return True
 

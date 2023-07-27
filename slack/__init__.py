@@ -3,6 +3,9 @@ import logging
 
 from slack_bolt import App
 from slack_bolt.adapter.flask import SlackRequestHandler
+from slack_bolt.oauth.callback_options import CallbackOptions, SuccessArgs, FailureArgs
+from slack_bolt.response import BoltResponse
+
 
 import json
 import requests
@@ -10,6 +13,7 @@ import re
 
 from urlextract import URLExtract
 
+from processors.db import DB
 from processors.file import TempFileManager, FileProcessor
 from processors.qa import QAProcessor
 from processors.url import URLProcessor
@@ -26,7 +30,8 @@ if stage == 'local':
         token=os.environ.get("SLACK_BOT_TOKEN")
     )
 else: 
-    from sqlalchemy import URL, create_engine
+    from sqlalchemy import URL, create_engine, text
+    from sqlalchemy_utils import create_database, database_exists
     from slack_bolt.oauth.oauth_settings import OAuthSettings
     from slack_sdk.oauth.installation_store.sqlalchemy import SQLAlchemyInstallationStore
     from slack_sdk.oauth.state_store.sqlalchemy import SQLAlchemyOAuthStateStore
@@ -41,7 +46,7 @@ else:
         database="installations",
     )
 
-    engine = create_engine(url_object)
+    engine = create_engine(url_object, isolation_level='AUTOCOMMIT')
     installation_store = SQLAlchemyInstallationStore(
         client_id=os.environ.get("SLACK_CLIENT_ID"),
         engine=engine
@@ -52,6 +57,30 @@ else:
         engine=engine
     )
     state_store.metadata.create_all(engine)
+    
+    def success(args: SuccessArgs) -> BoltResponse:
+        assert args.request is not None
+        
+        team_db_url = url_object.set(database=args.installation.team_id)
+        if not database_exists(team_db_url):
+            create_database(team_db_url)
+            team_engine = create_engine(team_db_url)
+            with team_engine.connect() as conn:
+                conn.execute(text(f"CREATE EXTENSION vector;"))
+            
+        return BoltResponse(
+            status=200,  # you can redirect users too
+            body=f"Installed {os.environ.get('BOT_NAME')} successfully on {args.installation.team_name}"
+        )
+
+    def failure(args: FailureArgs) -> BoltResponse:
+        assert args.request is not None
+        assert args.reason is not None
+        return BoltResponse(
+            status=args.suggested_status_code,
+            body=f"Failed to install {os.environ.get('BOT_NAME')} due to {args.reason}"
+        )
+
     oauth_settings = OAuthSettings(
         client_id=os.environ.get("SLACK_CLIENT_ID"),
         client_secret=os.environ.get("SLACK_CLIENT_SECRET"),
@@ -67,6 +96,7 @@ else:
         ],
         installation_store=installation_store,
         state_store=state_store,
+        callback_options=CallbackOptions(success=success, failure=failure),
     )
 
     app = App(
@@ -134,6 +164,8 @@ def common_event_handler(context, client, event, say):
     
     thread_ts = event.get("thread_ts", None) or event["ts"]
 
+    team_id = context.get('team_id')
+
     has_url = False
     has_document = False
     has_conversation = False
@@ -149,7 +181,7 @@ def common_event_handler(context, client, event, say):
         for idx, url in enumerate(urls):
             say(f"Checking out the link {url}. Will let you know when I am done!", thread_ts=thread_ts)
 
-            URLProcessor.process(url, thread_ts)
+            URLProcessor.process(url, thread_ts, team_id)
 
             if idx == len(urls) - 1:
                 if len(urls) > 1:
@@ -173,7 +205,7 @@ def common_event_handler(context, client, event, say):
             with TempFileManager(file_name) as (temp_file_path, temp_file):
                 temp_file.write(response.content)
                 
-                processed = FileProcessor.process(file_type, temp_file_path, thread_ts)
+                processed = FileProcessor.process(file_type, temp_file_path, thread_ts, team_id)
                 if processed:
                     if idx == len(event["files"]) - 1:
                         if len(event["files"]) > 1:
@@ -188,8 +220,16 @@ def common_event_handler(context, client, event, say):
     # Check for General QA
     if text:
         logging.info(f"Text is {text}")
-        answer = QAProcessor.process(text, thread_ts)
-        say(text=answer, thread_ts=thread_ts)
+        answer = QAProcessor.process(text, thread_ts, team_id)
+
+        blocks = [{
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": answer
+            }
+        }]
+        say(blocks=blocks, text=answer, thread_ts=thread_ts)
 
 
 handler = SlackRequestHandler(app)

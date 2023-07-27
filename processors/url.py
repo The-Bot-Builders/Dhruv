@@ -10,12 +10,12 @@ logging.basicConfig(level=logging.INFO)
 from langchain.utilities import ApifyWrapper
 from langchain.document_loaders.base import Document
 
-from processors.db import CONNECTION_STRING
+from processors.db import DB
 from langchain.vectorstores.pgvector import PGVector
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-from langchain.embeddings.huggingface import HuggingFaceEmbeddings
+from langchain.embeddings.openai import OpenAIEmbeddings
 
 from langchain.document_loaders import TextLoader
 from .file import TempFileManager
@@ -23,7 +23,7 @@ from .file import TempFileManager
 class URLProcessor:
 
     @staticmethod
-    def process(url, index):
+    def process(url, index, client_id):
         index_md5 = hashlib.md5(index.encode()).hexdigest()
 
         (url_type, parsed_url) = determine_url_type(url)
@@ -43,11 +43,11 @@ class URLProcessor:
         texts = splitter.split_documents(pages)
 
         PGVector.from_documents(
-            embedding=HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2'),
+            embedding=OpenAIEmbeddings(),
             documents=texts,
             collection_name=index_md5,
             pre_delete_collection=False,
-            connection_string=CONNECTION_STRING
+            connection_string=DB.get_connection_string(client_id)
         )
 
 def determine_url_type(url):

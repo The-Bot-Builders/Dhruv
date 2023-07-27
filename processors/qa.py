@@ -4,10 +4,10 @@ import hashlib
 import logging
 logging.basicConfig(level=logging.INFO)
 
-from processors.db import CONNECTION_STRING
+from processors.db import DB
 from langchain.vectorstores.pgvector import PGVector, DistanceStrategy
 
-from langchain.embeddings.huggingface import HuggingFaceEmbeddings
+from langchain.embeddings.openai import OpenAIEmbeddings
 
 from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
@@ -16,7 +16,7 @@ from langchain.prompts import PromptTemplate
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 BOT_DESCRIPTION = f"Your name is {os.environ.get('BOT_NAME')}. Be friendly when you answer, and ask if you can help rather than assist."
-TEMPLATE = BOT_DESCRIPTION + """Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+TEMPLATE = BOT_DESCRIPTION + """Use the following pieces of context to answer the question at the end. Use bullet points. Format your answer in markdown format.
 
 {context}
 
@@ -26,17 +26,17 @@ Helpful Answer:"""
 class QAProcessor:
 
     @staticmethod
-    def process(question, index):
+    def process(question, index, client_id):
         index_md5 = hashlib.md5(index.encode()).hexdigest()
 
-        embeddings = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
+        embeddings = OpenAIEmbeddings()
 
         retriever = PGVector.from_existing_index(
                         embedding=embeddings,
                         collection_name=index_md5,
                         distance_strategy=DistanceStrategy.COSINE,
                         pre_delete_collection = False,
-                        connection_string=CONNECTION_STRING,
+                        connection_string=DB.get_connection_string(client_id),
                     ).as_retriever()
 
         chat = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0.0)
