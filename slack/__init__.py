@@ -200,7 +200,10 @@ def common_event_handler(context, client, event, say):
         say("You have to help me out here. I am not sure what you meant by that?", thread_ts=thread_ts)
 
     if answer:
-        say(text=answer, thread_ts=thread_ts)
+        say(blocks=[{
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": answer}
+        }], text=answer, thread_ts=thread_ts)
 
 def processURLs(text, thread_ts, team_id, bot_token, say):
     urlExtrator = URLExtract()

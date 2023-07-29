@@ -76,7 +76,7 @@ class QAProcessor:
     def processContextSummary(text, thread_ts, client_id):
         index_md5 = hashlib.md5(thread_ts.encode()).hexdigest()
 
-        text = "Summarize the content within 100 words. Format the answer with ordered lists and ascii icons. Also add 5 interesting questions that I can ask."
+        text = "Summarize the content within 100 words. Use emojis to make the content more fun. Use bullet points. Format the answer in Slack Markdown. Also add 5 interesting questions that I can ask."
         
         embeddings = OpenAIEmbeddings()
 
