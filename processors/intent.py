@@ -44,16 +44,16 @@ class IntentProcessor:
                 'answer': 'IdentityQA'
             }, {
                 'question': "Summarize the context",
-                'answer': 'ContextualSummary'
+                'answer': 'ContextSummary'
             }, {
                 'question': "Summarize the document/s",
-                'answer': 'ContextualSummary'
+                'answer': 'ContextSummary'
             }, {
                 'question': "Major points from the context",
-                'answer': 'ContextualSummary'
+                'answer': 'ContextSummary'
             }, {
                 'question': "Summarize the url/s",
-                'answer': 'ContextualSummary'
+                'answer': 'ContextSummary'
             }, {
                 'question': "Summarize the conversation",
                 'answer': 'ConversationSummary'
@@ -86,6 +86,8 @@ class IntentProcessor:
         
         intent = 'GeneralQA'
 
+        print(selected_intent)
+
         if len(selected_intent) != 0 and selected_intent[0]["answer"] in [
             Intent.IndentityQA,
             Intent.ContextSummary,
@@ -93,6 +95,7 @@ class IntentProcessor:
         ]:
             intent = selected_intent[0]["answer"]
         
+        print(intent)
         return intent
 
 
