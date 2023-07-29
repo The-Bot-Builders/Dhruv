@@ -17,7 +17,7 @@ from processors.db import DB
 from processors.file import TempFileManager, FileProcessor
 from processors.qa import QAProcessor
 from processors.url import URLProcessor
-from processors.intent import IntentProcessor
+from processors.intent import IntentProcessor, Intent
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -178,27 +178,29 @@ def common_event_handler(context, client, event, say):
 
     # Check for Files
     if "files" in event:
-        processFiles(event['files'], thread_ts, team_id, bot_token, say)
+        processFiles(text, event['files'], thread_ts, team_id, bot_token, say)
 
     # Find the intent
-    intent = IntentProcessor.process(text)
-
+    intent = IntentProcessor.process(text, thread_ts, team_id)
+    
     answer = None
-    if intent == "GeneralQA":
+    if intent == Intent.IndentityQA:
+        answer = QAProcessor.processIndentityQA(text, thread_ts, team_id)
+
+    elif intent == Intent.GeneralQA:
+        answer = QAProcessor.processGeneralQA(text, thread_ts, team_id)
+
+    elif intent == Intent.ContextSummary:
+        answer = QAProcessor.processContextSummary(text, thread_ts, team_id)
+
+    elif intent == Intent.ConversationSummary:
         answer = QAProcessor.process(text, thread_ts, team_id)
-    
-    elif intent == "SummaryContext":
-        text = "Summarize the content within 100 words. Format the answer with bullet points and ascii icons. Also add 5 interesting questions that I can ask."
-    
-    elif intent == "SummaryConversation":
-        text = "Summarize the conversation within 100 words. Format the answer with bullet points and ascii icons. Also add 5 interesting questions that I can ask."
     
     else:
         say("You have to help me out here. I am not sure what you meant by that?", thread_ts=thread_ts)
 
     if answer:
         say(text=answer, thread_ts=thread_ts)
-
 
 def processURLs(text, thread_ts, team_id, bot_token, say):
     urlExtrator = URLExtract()
@@ -209,17 +211,19 @@ def processURLs(text, thread_ts, team_id, bot_token, say):
             say(f"Checking out the link {url}. Will let you know when I am done!", thread_ts=thread_ts)
 
             URLProcessor.process(url, thread_ts, team_id)
-
-            if idx == len(urls) - 1:
-                if len(urls) > 1:
-                    say(f"Finished reading the links. Let me summarize what I just read.", thread_ts=thread_ts)
-                else:
-                    say(f"Finished reading the link. Let me summarize what I just read.", thread_ts=thread_ts)
         
             text = text.replace(url, "")
             text = text.strip()
+        
+        if text != "":
+            return
+        
+        if len(urls) > 1:
+            say(f"Finished reading the links. Let me summarize what I just read.", thread_ts=thread_ts)
+        else:
+            say(f"Finished reading the link. Let me summarize what I just read.", thread_ts=thread_ts)
 
-def processFiles(files, thread_ts, team_id, bot_token, say):
+def processFiles(text, files, thread_ts, team_id, bot_token, say):
     for idx, file in enumerate(files):
         file_url = file['url_private']
         file_type = file['filetype']
@@ -232,14 +236,15 @@ def processFiles(files, thread_ts, team_id, bot_token, say):
             temp_file.write(response.content)
             
             processed = FileProcessor.process(file_type, temp_file_path, thread_ts, team_id)
-            if processed:
-                if idx == len(files) - 1:
-                    if len(files) > 1:
-                        say(f"Finished reading the files. Let me summarize what I just read.", thread_ts=thread_ts)
-                    else:
-                        say(f"Finished reading the file. Let me summarize what I just read.", thread_ts=thread_ts)
-                
-            else:
+            if not processed:
                 say(f"Sorry, I am not able to read this type of files yet!", thread_ts=thread_ts)
+        
+        if text != "":
+            return
+
+        if len(files) > 1:
+            say(f"Finished reading the files. Let me summarize what I just read.", thread_ts=thread_ts)
+        else:
+            say(f"Finished reading the file. Let me summarize what I just read.", thread_ts=thread_ts)
 
 handler = SlackRequestHandler(app)
