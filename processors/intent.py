@@ -35,43 +35,43 @@ class IntentProcessor:
         intent_examples = [
             {
                 'question': "What is your name?",
-                'answer': 'IdentityQA'
+                'answer': Intent.IndentityQA
             }, {
                 'question': "What is your age?",
-                'answer': 'IdentityQA'
+                'answer': Intent.IndentityQA
             }, {
                 'question': "Who made you?",
-                'answer': 'IdentityQA'
+                'answer': Intent.IndentityQA
             }, {
                 'question': "Summarize the context",
-                'answer': 'ContextSummary'
+                'answer': Intent.ContextSummary
             }, {
                 'question': "Summarize the document/s",
-                'answer': 'ContextSummary'
+                'answer': Intent.ContextSummary
             }, {
                 'question': "Major points from the context",
-                'answer': 'ContextSummary'
+                'answer': Intent.ContextSummary
             }, {
                 'question': "Summarize the url/s",
-                'answer': 'ContextSummary'
+                'answer': Intent.ContextSummary
             }, {
                 'question': "Summarize the conversation",
-                'answer': 'ConversationSummary'
+                'answer': Intent.ConversationSummary
             }, {
                 'question': "Highlights and lowlights from the discussion",
-                'answer': "ConversationSummary"
+                'answer': Intent.ConversationSummary
             }, {
-            'question': "Summarize the discussion",
-            'answer': "ConversationSummary"
+                'question': "Summarize the discussion",
+                'answer': Intent.ConversationSummary
             }, {
                 'question': "What is the capital of France?",
-                'answer': "QA"
+                'answer': Intent.GeneralQA
             }, {
                 'question': "How to make pancakes?",
-                'answer': "QA"
+                'answer': Intent.GeneralQA
             }, {
                 'question': "At what time did India gain independence?",
-                'answer': "QA"
+                'answer': Intent.GeneralQA
             }
         ]
         
@@ -86,8 +86,6 @@ class IntentProcessor:
         
         intent = 'GeneralQA'
 
-        print(selected_intent)
-
         if len(selected_intent) != 0 and selected_intent[0]["answer"] in [
             Intent.IndentityQA,
             Intent.ContextSummary,
@@ -95,7 +93,6 @@ class IntentProcessor:
         ]:
             intent = selected_intent[0]["answer"]
         
-        print(intent)
         return intent
 
 

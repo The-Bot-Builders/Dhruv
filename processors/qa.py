@@ -73,17 +73,31 @@ class QAProcessor:
         return result['answer']
 
     @staticmethod
-    def processContextSummary(text, docs, thread_ts, client_id):
+    def processContextSummary(text, thread_ts, client_id):
+        index_md5 = hashlib.md5(thread_ts.encode()).hexdigest()
+
         text = "Summarize the content within 100 words. Format the answer with ordered lists and ascii icons. Also add 5 interesting questions that I can ask."
         
+        embeddings = OpenAIEmbeddings()
+
+        retriever = PGVector.from_existing_index(
+                        embedding=embeddings,
+                        collection_name=index_md5,
+                        distance_strategy=DistanceStrategy.COSINE,
+                        pre_delete_collection = False,
+                        connection_string=DB.get_connection_string(client_id),
+                    )
+
         chat = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0.0)
+
+        docs = retriever.similarity_search(text)
 
         SYSTEM_PROMPT_TEMPLATE = f"""
             You are an AI Assistant. Answer the question directly and in details using the context provided in tripple quotes.
             Also ask 3 followup questions the user can ask. Format your answer in Markdown.
 
             ```
-            {' '.join(map(lambda x: x.content, docs))}
+            {' '.join(map(lambda x: x.page_content, docs))}
             ```
         """
 
