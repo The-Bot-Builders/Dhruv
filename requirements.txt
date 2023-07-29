@@ -15,4 +15,4 @@ flask==2.3.2
 waitress==2.1.2
 SQLAlchemy==2.0.16
 SQLAlchemy-Utils==0.41.1
-chromadb==0.4.3
+faiss-cpu==1.7.4

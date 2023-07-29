@@ -15,7 +15,7 @@ from langchain.prompts.few_shot import FewShotPromptTemplate
 from langchain.prompts.prompt import PromptTemplate
 from langchain.prompts.example_selector import SemanticSimilarityExampleSelector
 
-from langchain.vectorstores import Chroma
+from langchain.vectorstores import FAISS
 
 class Intent:
 
@@ -78,7 +78,7 @@ class IntentProcessor:
         intent_selector = SemanticSimilarityExampleSelector.from_examples(
             intent_examples,
             OpenAIEmbeddings(),
-            Chroma,
+            FAISS,
             k=1
         )
 
