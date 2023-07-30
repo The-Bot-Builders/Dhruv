@@ -20,6 +20,7 @@ from langchain.vectorstores import FAISS
 class Intent:
 
     IndentityQA = "IdentityQA"
+    ParentQA = "ParentQA"
     GeneralQA = "GeneralQA"
     ContextualQA = "ContextualQA"
     ConversationSummary = "ConversationSummary"
@@ -65,13 +66,19 @@ class IntentProcessor:
                 'answer': Intent.ConversationSummary
             }, {
                 'question': "What is the capital of France?",
-                'answer': Intent.GeneralQA
+                'answer': Intent.ParentQA
             }, {
                 'question': "How to make pancakes?",
-                'answer': Intent.GeneralQA
+                'answer': Intent.ParentQA
             }, {
                 'question': "At what time did India gain independence?",
-                'answer': Intent.GeneralQA
+                'answer': Intent.ParentQA
+            }, {
+                'question': "Does the document talk about X?",
+                'answer': Intent.ParentQA
+            }, {
+                'question': "What is Y talk about in here?",
+                'answer': Intent.ParentQA
             }
         ]
         
@@ -84,16 +91,33 @@ class IntentProcessor:
 
         selected_intent = intent_selector.select_examples({"question": question})
         
-        intent = 'GeneralQA'
-
-        if len(selected_intent) != 0 and selected_intent[0]["answer"] in [
-            Intent.IndentityQA,
-            Intent.ContextSummary,
-            Intent.ConversationSummary
-        ]:
-            intent = selected_intent[0]["answer"]
+        intent = Intent.GeneralQA if len(selected_intent) == 0 else selected_intent[0]["answer"]
         
-        return intent
+        if intent == Intent.IndentityQA:
+            return (intent, [])
+        elif intent == Intent.ContextSummary:
+            return (intent, [])
+        elif intent == Intent.ConversationSummary:
+            return (intent, [])
+        else:
+            index_md5 = hashlib.md5(index.encode()).hexdigest()
+
+            embeddings = OpenAIEmbeddings()
+
+            retriever = PGVector.from_existing_index(
+                            embedding=embeddings,
+                            collection_name=index_md5,
+                            distance_strategy=DistanceStrategy.COSINE,
+                            pre_delete_collection = False,
+                            connection_string=DB.get_connection_string(client_id),
+                        )
+
+            docs = retriever.similarity_search(question, k=10)
+
+            if len(docs):
+                return (Intent.ContextualQA, docs)
+
+            return (Intent.GeneralQA, [])
 
 
         

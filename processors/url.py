@@ -7,48 +7,37 @@ import time
 import logging
 logging.basicConfig(level=logging.INFO)
 
+from .summary import Summary
+from .indexing import Indexing
+from .file import TempFileManager
+
 from langchain.utilities import ApifyWrapper
 from langchain.document_loaders.base import Document
 
-from processors.db import DB
-from langchain.vectorstores.pgvector import PGVector
-
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-from langchain.embeddings.openai import OpenAIEmbeddings
-
 from langchain.document_loaders import TextLoader
-from .file import TempFileManager
+
+from bs4 import BeautifulSoup
 
 class URLProcessor:
 
     @staticmethod
     def process(url, index, client_id):
         index_md5 = hashlib.md5(index.encode()).hexdigest()
+        document_md5 = hashlib.md5(url.encode()).hexdigest()
 
         (url_type, parsed_url) = determine_url_type(url)
         
         pages = []
         if url_type == "notion":
             pages = get_pages_from_notion(url, parsed_url)
-        elif url_type == "apify":
-            pages = get_pages_from_apify(url, parsed_url)
-        elif url_type == "soup":
-            pages = get_pages_from_soup(url, parsed_url)
+        elif url_type == "web":
+            pages = get_pages_from_web(url, parsed_url)
 
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200
-        )
-        texts = splitter.split_documents(pages)
-
-        PGVector.from_documents(
-            embedding=OpenAIEmbeddings(),
-            documents=texts,
-            collection_name=index_md5,
-            pre_delete_collection=False,
-            connection_string=DB.get_connection_string(client_id)
-        )
+        Indexing.save_in_index(client_id, index_md5, pages)
+        Summary.save_summary(client_id, index_md5, document_md5, pages)
+        
 
 def determine_url_type(url):
     parsed_url = urlparse(url)
@@ -56,23 +45,45 @@ def determine_url_type(url):
     if parsed_url.netloc == "www.notion.so":
         return ("notion", parsed_url)
     else:
-        return ("apify", parsed_url)
+        return ("web", parsed_url)
 
-def get_pages_from_apify(url, parsed_url):
-    apify = ApifyWrapper()
+def get_pages_from_web(url, parsed_url):
+    response = requests.get(url, timeout=5)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    for undesired_div in ["sidebar", "header", "footer"]:
+        [
+            tag.extract()
+            for tag in soup.find_all(
+                "div", class_=lambda x: x and undesired_div in x.split()
+            )
+        ]
+    for undesired_tag in [
+            "nav",
+            "header",
+            "footer",
+            "meta",
+            "script",
+            "style",
+        ]:
+            [tag.extract() for tag in soup.find_all(undesired_tag)]
 
-    loader = apify.call_actor(
-        actor_id="apify/website-content-crawler",
-        run_input={"startUrls": [{"url": url}], "maxRequestsPerCrawl": 1},
-        dataset_mapping_function=lambda item: Document(
-            page_content=item["text"] or "",
-            metadata={"source": item["url"]}
-        ),
-        memory_mbytes=1024,
-        timeout_secs=120
-    )
-    pages = loader.load_and_split()
-    return pages
+    text = soup.get_text("\n")
+    return [Document(page_content=text, metadata={"source": url})]
+
+    # apify = ApifyWrapper()
+
+    # loader = apify.call_actor(
+    #     actor_id="apify/website-content-crawler",
+    #     run_input={"startUrls": [{"url": url}], "maxRequestsPerCrawl": 1},
+    #     dataset_mapping_function=lambda item: Document(
+    #         page_content=item["text"] or "",
+    #         metadata={"source": item["url"]}
+    #     ),
+    #     memory_mbytes=1024,
+    #     timeout_secs=120
+    # )
+    # pages = loader.load_and_split()
+    # return pages
 
 def get_pages_from_notion(url, parsed_url):
     page_id = parsed_url.path.split("/")[-1].split("-")[-1]

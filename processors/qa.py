@@ -4,8 +4,8 @@ import hashlib
 import logging
 logging.basicConfig(level=logging.INFO)
 
-from processors.db import DB
-from langchain.vectorstores.pgvector import PGVector, DistanceStrategy
+from .indexing import Indexing
+from .summary import Summary
 
 from langchain.embeddings.openai import OpenAIEmbeddings
 
@@ -26,7 +26,7 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 class QAProcessor:
 
     @staticmethod
-    def processIndentityQA(text, thread_ts, client_id):
+    def processIndentityQA(text, docs, chat_history, thread_ts, client_id):
         chat = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0.0)
 
         SYSTEM_PROMPT_TEMPLATE = f"""
@@ -49,48 +49,33 @@ class QAProcessor:
         return answer.content
 
     @staticmethod
-    def processGeneralQA(text, thread_ts, client_id):
-        index_md5 = hashlib.md5(thread_ts.encode()).hexdigest()
-
-        embeddings = OpenAIEmbeddings()
-
-        retriever = PGVector.from_existing_index(
-                        embedding=embeddings,
-                        collection_name=index_md5,
-                        distance_strategy=DistanceStrategy.COSINE,
-                        pre_delete_collection = False,
-                        connection_string=DB.get_connection_string(client_id),
-                    ).as_retriever()
-
+    def processGeneralQA(text, docs, chat_history, thread_ts, client_id):
         chat = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0.0)
 
-        chain = ConversationalRetrievalChain.from_llm(
-            llm=chat,
-            chain_type="map_reduce",
-            retriever=retriever
-        )
-        result = chain({"question": text, "chat_history": []})
-        return result['answer']
+        SYSTEM_PROMPT_TEMPLATE = f"""
+            You are an AI Assistant. Answer the question directly and in details.
+            Also ask 3 followup questions the user can ask. Format your answer in Markdown.
+        """
+
+        HUMAN_PROMPT_TEMPLATE ="{text}"
+        
+        system_message_prompt = SystemMessagePromptTemplate.from_template(SYSTEM_PROMPT_TEMPLATE)
+        human_message_prompt = HumanMessagePromptTemplate.from_template(HUMAN_PROMPT_TEMPLATE)
+
+        chat_prompt = ChatPromptTemplate.from_messages([system_message_prompt, human_message_prompt])
+
+        # get a chat completion from the formatted messages
+        answer = chat(chat_prompt.format_prompt(text=text).to_messages())
+        
+        return answer.content
 
     @staticmethod
-    def processContextSummary(text, thread_ts, client_id):
+    def processContextQA(text, docs, chat_history, thread_ts, client_id):
         index_md5 = hashlib.md5(thread_ts.encode()).hexdigest()
 
-        text = "Summarize the content within 100 words. Use emojis to make the content more fun. Use bullet points. Format the answer in Slack Markdown. Also add 5 interesting questions that I can ask."
-        
         embeddings = OpenAIEmbeddings()
 
-        retriever = PGVector.from_existing_index(
-                        embedding=embeddings,
-                        collection_name=index_md5,
-                        distance_strategy=DistanceStrategy.COSINE,
-                        pre_delete_collection = False,
-                        connection_string=DB.get_connection_string(client_id),
-                    )
-
         chat = ChatOpenAI(model_name='gpt-3.5-turbo', temperature=0.0)
-
-        docs = retriever.similarity_search(text)
 
         SYSTEM_PROMPT_TEMPLATE = f"""
             You are an AI Assistant. Answer the question directly and in details using the context provided in tripple quotes.
@@ -114,7 +99,14 @@ class QAProcessor:
         return answer.content
 
     @staticmethod
-    def processConversationSummary(text, thread_ts, team_id):
+    def processContextSummary(text, docs, chat_history, thread_ts, client_id):
+        index_md5 = hashlib.md5(thread_ts.encode()).hexdigest()
+
+        return Summary.get_summary(client_id, index_md5)
+
+    @staticmethod
+    def processConversationSummary(text, docs, chat_history, thread_ts, client_id):
+        
         text = "Summarize the conversation within 100 words. Format the answer with bullet points and ascii icons. Also add 5 interesting questions that I can ask."
 
 # Used for testing

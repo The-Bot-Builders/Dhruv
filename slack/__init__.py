@@ -31,23 +31,13 @@ if stage == 'local':
         token=os.environ.get("SLACK_BOT_TOKEN")
     )
 else: 
-    from sqlalchemy import URL, create_engine, text
     from sqlalchemy_utils import create_database, database_exists
     from slack_bolt.oauth.oauth_settings import OAuthSettings
     from slack_sdk.oauth.installation_store.sqlalchemy import SQLAlchemyInstallationStore
     from slack_sdk.oauth.state_store.sqlalchemy import SQLAlchemyOAuthStateStore
 
     # Initializes your app with your bot token and signing secret
-    url_object = URL.create(
-        "postgresql+psycopg2",
-        username=os.environ.get("DB_USERNAME"),
-        password=os.environ.get("DB_PASSWORD"),
-        host=os.environ.get("DB_URL"),
-        port=int(os.environ.get("DB_PORT")),
-        database="installations",
-    )
-
-    engine = create_engine(url_object, isolation_level='AUTOCOMMIT')
+    engine = DB.engine("installations")
     installation_store = SQLAlchemyInstallationStore(
         client_id=os.environ.get("SLACK_CLIENT_ID"),
         engine=engine
@@ -65,7 +55,7 @@ else:
         team_db_url = url_object.set(database=args.installation.team_id)
         if not database_exists(team_db_url):
             create_database(team_db_url)
-            team_engine = create_engine(team_db_url)
+            team_engine = DB.engine(args.installation.team_id)
             with team_engine.connect() as conn:
                 conn.execute(text(f"CREATE EXTENSION vector;"))
             
@@ -169,6 +159,12 @@ def common_event_handler(context, client, event, say):
     team_id = context.get('team_id')
     bot_token = context["authorize_result"]["bot_token"]
 
+    # conversations_in_thread = client.conversations_replies(
+    #     channel=event['channel'],
+    #     ts=thread_ts,
+    # )
+    # print('\n'.join(list(map(lambda x: x['text'], conversations_in_thread['messages']))))
+
     # Message formatting
     text = event['text']
     text = re.sub(r"<@[A-Z0-9]+>", "", text)
@@ -181,20 +177,24 @@ def common_event_handler(context, client, event, say):
         processFiles(text, event['files'], thread_ts, team_id, bot_token, say)
 
     # Find the intent
-    intent = IntentProcessor.process(text, thread_ts, team_id)
+    (intent, docs) = IntentProcessor.process(text, thread_ts, team_id)
+    chat_history = []
     
     answer = None
     if intent == Intent.IndentityQA:
-        answer = QAProcessor.processIndentityQA(text, thread_ts, team_id)
-
-    elif intent == Intent.GeneralQA:
-        answer = QAProcessor.processGeneralQA(text, thread_ts, team_id)
-
+        answer = QAProcessor.processIndentityQA(text, docs, chat_history, thread_ts, team_id)
+    
     elif intent == Intent.ContextSummary:
-        answer = QAProcessor.processContextSummary(text, thread_ts, team_id)
+        answer = QAProcessor.processContextSummary(text, docs, chat_history, thread_ts, team_id)
+
+    elif intent == Intent.ContextualQA:
+        answer = QAProcessor.processContextQA(text, docs, chat_history, thread_ts, team_id)
+    
+    elif intent == Intent.GeneralQA:
+        answer = QAProcessor.processGeneralQA(text, docs, chat_history, thread_ts, team_id)
 
     elif intent == Intent.ConversationSummary:
-        answer = QAProcessor.process(text, thread_ts, team_id)
+        answer = QAProcessor.processConversationSummary(text, docs, chat_history, thread_ts, team_id)
     
     else:
         say("You have to help me out here. I am not sure what you meant by that?", thread_ts=thread_ts)
