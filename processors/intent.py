@@ -44,6 +44,9 @@ class IntentProcessor:
                 'question': "Who made you?",
                 'answer': Intent.IndentityQA
             }, {
+                'question': "hat is the name of the person who wrote you?",
+                'answer': Intent.IndentityQA
+            }, {
                 'question': "Summarize the context",
                 'answer': Intent.ContextSummary
             }, {
@@ -65,6 +68,9 @@ class IntentProcessor:
                 'question': "Summarize the discussion",
                 'answer': Intent.ConversationSummary
             }, {
+                'question': "Who wrote this article?",
+                'answer': Intent.ParentQA
+            }, {
                 'question': "What is the capital of France?",
                 'answer': Intent.ParentQA
             }, {
@@ -78,6 +84,9 @@ class IntentProcessor:
                 'answer': Intent.ParentQA
             }, {
                 'question': "What is Y talk about in here?",
+                'answer': Intent.ParentQA
+            }, {
+                'question': "What is the name of person who wrote this article?",
                 'answer': Intent.ParentQA
             }
         ]
