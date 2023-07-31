@@ -36,7 +36,7 @@ class Indexing:
             connection_string=DB.get_connection_string(client_id),
         )
 
-        return retriever.similarity_search(text, k=20)
+        return retriever.similarity_search(text, k=1)
     
     @staticmethod
     def get_retriever(client_id, thread_id):
