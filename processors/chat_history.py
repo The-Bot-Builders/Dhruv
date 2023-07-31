@@ -1,6 +1,11 @@
 import tiktoken
 from langchain.memory import ConversationBufferWindowMemory, ChatMessageHistory
 
+class ChatHistory:
+
+    @staticmethod
+    def get_chat_history(client_id, thread_id):
+        pass
 
 def count_tokens(text):
     encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")

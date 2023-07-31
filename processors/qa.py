@@ -6,6 +6,7 @@ logging.basicConfig(level=logging.INFO)
 
 from .db import DB
 from .indexing import Indexing
+from .chat_history import ChatHistory
 
 from langchain import OpenAI
 from langchain.chat_models import ChatOpenAI
@@ -26,6 +27,7 @@ class QAProcessor:
         index_md5 = hashlib.md5(thread_ts.encode()).hexdigest()
 
         docs = Indexing.get_from_index(client_id, index_md5, text)
+        chat_history = ChatHistory.get_chat_history(client_id, index_md5)
 
         memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
