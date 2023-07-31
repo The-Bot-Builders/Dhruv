@@ -16,4 +16,3 @@ waitress==2.1.2
 SQLAlchemy==2.0.16
 SQLAlchemy-Utils==0.41.1
 beautifulsoup4==4.12.2
-sentence-transformers==2.2.2

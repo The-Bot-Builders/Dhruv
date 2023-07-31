@@ -14,6 +14,11 @@ ENV PYTHONUNBUFFERED=1
 ENV STAGE=prod
 
 # Install pip requirements
+RUN python -m pip install torch==2.0.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
+RUN python -m pip install torchvision==0.15.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
+COPY heavy_requirements.txt .
+RUN python -m pip install -r heavy_requirements.txt
+
 COPY requirements.txt .
 RUN python -m pip install -r requirements.txt
 COPY overrides/pgvector.py /usr/local/lib/python3.11/site-packages/langchain/vectorstores/pgvector.py

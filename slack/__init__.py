@@ -18,6 +18,8 @@ from processors.file import TempFileManager, FileProcessor
 from processors.qa import QAProcessor
 from processors.url import URLProcessor
 
+from .slack_formatting import convert_markdown_to_slack
+
 import logging
 logging.basicConfig(level=logging.INFO)
 
@@ -180,7 +182,7 @@ def common_event_handler(context, client, event, say):
     if answer:
         say(blocks=[{
             "type": "section",
-            "text": {"type": "mrkdwn", "text": answer}
+            "text": {"type": "mrkdwn", "text": convert_markdown_to_slack(answer)}
         }], text=answer, thread_ts=thread_ts)
 
 def processURLs(text, thread_ts, team_id, bot_token, say):

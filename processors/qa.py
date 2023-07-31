@@ -39,7 +39,7 @@ class QAProcessor:
 
         if len(docs):
             template += """
-                Answer the question directly and in details using the context provided in tripple quotes.
+                Answer the question directly and in details using the context provided in tripple quotes. Use lists and emojis.
                 Also ask 3 followup questions the user can ask. Format your answer in Markdown.
 
                 ```
@@ -64,7 +64,7 @@ class QAProcessor:
             return result["answer"]
         else:
             template += """
-                Answer the question directly and in details.
+                Answer the question directly and in details. Use lists and emojis.
                 Also ask 3 followup questions the user can ask. Format your answer in Markdown.
             
                 Current conversation:
