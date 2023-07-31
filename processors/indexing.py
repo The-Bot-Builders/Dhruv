@@ -33,4 +33,16 @@ class Indexing:
             connection_string=DB.get_connection_string(client_id),
         )
 
-        retriever.similarity_search(text, k=10)
+        return retriever.similarity_search(text, k=20)
+    
+    @staticmethod
+    def get_retriever(client_id, thread_id):
+        retriever = PGVector.from_existing_index(
+            embedding=OpenAIEmbeddings(),
+            collection_name=thread_id,
+            distance_strategy=DistanceStrategy.COSINE,
+            pre_delete_collection = False,
+            connection_string=DB.get_connection_string(client_id),
+        )
+        
+        return retriever.as_retriever()

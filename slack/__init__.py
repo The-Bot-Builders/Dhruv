@@ -17,7 +17,6 @@ from processors.db import DB
 from processors.file import TempFileManager, FileProcessor
 from processors.qa import QAProcessor
 from processors.url import URLProcessor
-from processors.intent import IntentProcessor, Intent
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -175,29 +174,8 @@ def common_event_handler(context, client, event, say):
     # Check for Files
     if "files" in event:
         processFiles(text, event['files'], thread_ts, team_id, bot_token, say)
-
-    # Find the intent
-    (intent, docs) = IntentProcessor.process(text, thread_ts, team_id)
-    chat_history = []
     
-    answer = None
-    if intent == Intent.IndentityQA:
-        answer = QAProcessor.processIndentityQA(text, docs, chat_history, thread_ts, team_id)
-    
-    elif intent == Intent.ContextSummary:
-        answer = QAProcessor.processContextSummary(text, docs, chat_history, thread_ts, team_id)
-
-    elif intent == Intent.ContextualQA:
-        answer = QAProcessor.processContextQA(text, docs, chat_history, thread_ts, team_id)
-    
-    elif intent == Intent.GeneralQA:
-        answer = QAProcessor.processGeneralQA(text, docs, chat_history, thread_ts, team_id)
-
-    elif intent == Intent.ConversationSummary:
-        answer = QAProcessor.processConversationSummary(text, docs, chat_history, thread_ts, team_id)
-    
-    else:
-        say("You have to help me out here. I am not sure what you meant by that?", thread_ts=thread_ts)
+    answer = QAProcessor.process(text, thread_ts, team_id)
 
     if answer:
         say(blocks=[{

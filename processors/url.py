@@ -36,7 +36,6 @@ class URLProcessor:
             pages = get_pages_from_web(url, parsed_url)
 
         Indexing.save_in_index(client_id, index_md5, pages)
-        Summary.save_summary(client_id, index_md5, document_md5, pages)
         
 
 def determine_url_type(url):
