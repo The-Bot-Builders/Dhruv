@@ -44,7 +44,7 @@ class IntentProcessor:
                 'question': "Who made you?",
                 'answer': Intent.IndentityQA
             }, {
-                'question': "hat is the name of the person who wrote you?",
+                'question': "What is the name of the person who wrote you?",
                 'answer': Intent.IndentityQA
             }, {
                 'question': "Summarize the context",
@@ -80,13 +80,28 @@ class IntentProcessor:
                 'question': "At what time did India gain independence?",
                 'answer': Intent.ParentQA
             }, {
-                'question': "Does the document talk about X?",
+                'question': "Does the document talk about World Peace?",
                 'answer': Intent.ParentQA
             }, {
-                'question': "What is Y talk about in here?",
+                'question': "What is the author talking about in here?",
                 'answer': Intent.ParentQA
             }, {
                 'question': "What is the name of person who wrote this article?",
+                'answer': Intent.ParentQA
+            }, {
+                'question': "Tell me a joke",
+                'answer': Intent.ParentQA
+            }, {
+                'question': "Teach me how to write an email",
+                'answer': Intent.ParentQA
+            }, {
+                'question': "Talk to me about lifes purpose",
+                'answer': Intent.ParentQA
+            }, {
+                'question': "Tell me about the history of India",
+                'answer': Intent.ParentQA
+            }, {
+                'question': "Tell me a story about a tortoise and a rabbit",
                 'answer': Intent.ParentQA
             }
         ]
@@ -101,6 +116,8 @@ class IntentProcessor:
         selected_intent = intent_selector.select_examples({"question": question})
         
         intent = Intent.GeneralQA if len(selected_intent) == 0 else selected_intent[0]["answer"]
+        
+        print(f"Question: {question}, Intent: {intent}")
         
         if intent == Intent.IndentityQA:
             return (intent, [])
