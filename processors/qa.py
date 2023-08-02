@@ -39,8 +39,8 @@ class QAProcessor:
         if len(docs):
             joined_docs = '\n'.join(map(lambda doc: doc.page_content, docs))
             system_prompt += f"""
-                Answer the question directly and in details using the context provided in tripple quotes. Use lists and emojis.
-                Format answer in slack markdown.
+                Answer the question directly and in details using the context provided in tripple quotes. If you don't find the answer in the context, do not make anything up.
+                Use lists and emojis. Format answer in slack markdown.
 
                 ```
                 {joined_docs}
