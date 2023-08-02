@@ -174,7 +174,7 @@ def common_event_handler(context, client, event, say):
                         "type": "button",
                         "text": {
                             "type": "plain_text",
-                            "text": "Ask Dhruv"
+                            "text": f"Ask {os.environ.get('BOT_NAME', 'Dhurv')}"
                         },
                         "value": followup,
                         "action_id": "button"

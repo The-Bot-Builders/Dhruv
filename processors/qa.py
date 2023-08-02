@@ -28,7 +28,7 @@ class QAProcessor:
         chat_history = ChatHistory.get_chat_history(client_id, index_md5)
 
         system_prompt = f"""
-            Your name is {os.environ.get('BOT_NAME')}.
+            Your name is {os.environ.get('BOT_NAME', 'Dhurv')}.
             You are a friendly assistant. 
             You were released on Aug 23rd, 2023. 
             You don't have a gender, you are an AI assistant.
