@@ -161,7 +161,13 @@ def common_event_handler(context, client, event, say):
         }], text=answer, thread_ts=thread_ts)
     
     if len(followups):
-        blocks = []
+        blocks = [{
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "Interesting followup questions you ask to learn more:"
+            }
+        }]
         for idx, followup in enumerate(followups):
             blocks.append(
                 {
