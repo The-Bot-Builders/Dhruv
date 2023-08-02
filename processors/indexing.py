@@ -2,18 +2,15 @@ import os
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-from processors.db import DB
-from langchain.vectorstores.pgvector import PGVector, DistanceStrategy
-
-from langchain.vectorstores import Qdrant
-from qdrant_client.models import Distance, VectorParams
+from processors.db import engine, text
 
 from langchain.embeddings.huggingface import HuggingFaceEmbeddings
+from langchain.docstore.document import Document
 
 import logging
 logging.basicConfig(level=logging.INFO)
 
-RETRIEVER_DATABASE = os.environ.get('RETRIEVER_DATABASE', 'pg')
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 embedding = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
 
@@ -27,63 +24,72 @@ class Indexing:
         )
         texts = splitter.split_documents(pages)
 
-        if RETRIEVER_DATABASE == 'qdrant':
-            from .qdrant import client
+        with engine.connect() as conn:
+            table_name = f"{client_id}"
 
-            try: 
-                client.get_collection(f"{client_id}_{thread_id}")
-            except Exception as e:
-                client.recreate_collection(
-                    f"{client_id}_{thread_id}",
-                    vectors_config=VectorParams(size=384, distance=Distance.COSINE)
+            statement = f"""
+                CREATE TABLE IF NOT EXISTS {table_name}(
+                    id BIGSERIAL PRIMARY KEY,
+                    thread_id VARCHAR(1024),
+                    content TEXT,
+                    embeddings vector(384)
                 )
-
-            doc_store = Qdrant(
-                client=client, 
-                collection_name=f"{client_id}_{thread_id}", 
-                embeddings=embedding,
-            )
-            doc_store.add_documents(texts)
-        else:
-            PGVector.from_documents(
-                embedding=embedding,
-                documents=texts,
-                collection_name=thread_id,
-                pre_delete_collection=False,
-                connection_string=DB.get_connection_string(client_id)
-            )
-
-    @staticmethod
-    def get_from_index(client_id, thread_id, text):
-        vector_store = Indexing.vector_store(client_id, thread_id)
-        
-        return vector_store.similarity_search(text, k=1)
-    
-    @staticmethod
-    def get_retriever(client_id, thread_id):
-        vector_store = Indexing.vector_store(client_id, thread_id)
-        
-        return vector_store.as_retriever()
+            """
+            conn.execute(text(statement))
+            for txt in texts:
+                statement = f"""
+                    INSERT INTO {table_name} (
+                        thread_id,
+                        content,
+                        embeddings
+                    ) VALUES (
+                        :thread_id,
+                        :content,
+                        :embeddings
+                    )
+                """
+                conn.execute(
+                    text(statement),
+                    parameters={
+                        'thread_id': thread_id,
+                        'content': txt.page_content,
+                        'embeddings': f"{embedding.embed_query(txt.page_content)}"
+                    }
+                )
+            
 
     @staticmethod
-    def vector_store(client_id, thread_id):
-        retriever = None
-
-        if RETRIEVER_DATABASE == 'qdrant':
-            from .qdrant import client
-
-            retriever = Qdrant(
-                client=client, 
-                collection_name=f"{client_id}_{thread_id}", 
-                embeddings=embedding,
+    def get_from_index(client_id, thread_id, query):
+        table_name = f"{client_id}"
+        with engine.connect() as conn:
+            statement = f"""
+                CREATE TABLE IF NOT EXISTS {table_name}(
+                    id BIGSERIAL PRIMARY KEY,
+                    thread_id VARCHAR(1024),
+                    content TEXT,
+                    embeddings vector(384)
+                )
+            """
+            conn.execute(text(statement))
+            
+            embed_query = embedding.embed_query(query)
+            statement = f"""
+                SELECT content, 1 - (embeddings <=> :embeddings) AS similarity
+                FROM {table_name}
+                WHERE 1 - (embeddings <=> :embeddings) > 0.7 AND thread_id = :thread_id
+                ORDER BY similarity DESC
+                LIMIT 3
+            """
+            results = conn.execute(
+                text(statement),
+                parameters={
+                    'embeddings': f"{embedding.embed_query(query)}",
+                    'thread_id': thread_id
+                }
             )
-        else:
-            retriever = PGVector.from_existing_index(
-                embedding=embedding,
-                collection_name=thread_id,
-                distance_strategy=DistanceStrategy.COSINE,
-                pre_delete_collection = False,
-                connection_string=DB.get_connection_string(client_id),
-            )
-        
-        return retriever
+
+            documents = []
+            for row in results.fetchall():
+                documents.append(Document(page_content=row["content"]))
+            
+            return documents

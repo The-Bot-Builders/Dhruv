@@ -21,7 +21,6 @@ RUN python -m pip install -r heavy_requirements.txt
 
 COPY requirements.txt .
 RUN python -m pip install -r requirements.txt
-COPY overrides/pgvector.py /usr/local/lib/python3.11/site-packages/langchain/vectorstores/pgvector.py
 
 WORKDIR /app
 COPY . /app

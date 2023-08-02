@@ -8,7 +8,6 @@ from langchain.document_loaders import TextLoader
 from langchain.document_loaders.csv_loader import CSVLoader
 from langchain.document_loaders import PyPDFLoader
 
-from .summary import Summary
 from .indexing import Indexing
 
 class TempFileManager:
@@ -48,7 +47,6 @@ class FileProcessor:
             return False
 
         Indexing.save_in_index(client_id, index_md5, pages)
-        Summary.save_summary(client_id, index_md5, document_md5, pages)
 
         return True
 

@@ -13,7 +13,7 @@ import re
 
 from urlextract import URLExtract
 
-from processors.db import DB
+from processors.db import engine
 from processors.file import TempFileManager, FileProcessor
 from processors.qa import QAProcessor
 from processors.url import URLProcessor
@@ -38,7 +38,6 @@ else:
     from slack_sdk.oauth.state_store.sqlalchemy import SQLAlchemyOAuthStateStore
 
     # Initializes your app with your bot token and signing secret
-    engine = DB.engine("installations")
     installation_store = SQLAlchemyInstallationStore(
         client_id=os.environ.get("SLACK_CLIENT_ID"),
         engine=engine
@@ -50,29 +49,6 @@ else:
     )
     state_store.metadata.create_all(engine)
     
-    def success(args: SuccessArgs) -> BoltResponse:
-        assert args.request is not None
-        
-        team_db_url = url_object.set(database=args.installation.team_id)
-        if not database_exists(team_db_url):
-            create_database(team_db_url)
-            team_engine = DB.engine(args.installation.team_id)
-            with team_engine.connect() as conn:
-                conn.execute(text(f"CREATE EXTENSION vector;"))
-            
-        return BoltResponse(
-            status=200,  # you can redirect users too
-            body=f"Installed {os.environ.get('BOT_NAME')} successfully on {args.installation.team_name}"
-        )
-
-    def failure(args: FailureArgs) -> BoltResponse:
-        assert args.request is not None
-        assert args.reason is not None
-        return BoltResponse(
-            status=args.suggested_status_code,
-            body=f"Failed to install {os.environ.get('BOT_NAME')} due to {args.reason}"
-        )
-
     oauth_settings = OAuthSettings(
         client_id=os.environ.get("SLACK_CLIENT_ID"),
         client_secret=os.environ.get("SLACK_CLIENT_SECRET"),
@@ -87,8 +63,7 @@ else:
             "groups:history"
         ],
         installation_store=installation_store,
-        state_store=state_store,
-        callback_options=CallbackOptions(success=success, failure=failure),
+        state_store=state_store
     )
 
     app = App(

@@ -7,7 +7,6 @@ import time
 import logging
 logging.basicConfig(level=logging.INFO)
 
-from .summary import Summary
 from .indexing import Indexing
 from .file import TempFileManager
 
