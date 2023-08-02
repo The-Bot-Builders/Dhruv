@@ -152,13 +152,36 @@ def common_event_handler(context, client, event, say):
     if "files" in event:
         processFiles(text, event['files'], thread_ts, team_id, bot_token, say)
     
-    answer = QAProcessor.process(text, thread_ts, team_id)
+    (answer, followups) = QAProcessor.process(text, thread_ts, team_id)
 
     if answer:
         say(blocks=[{
             "type": "section",
             "text": {"type": "mrkdwn", "text": convert_markdown_to_slack(answer)}
         }], text=answer, thread_ts=thread_ts)
+    
+    if len(followups):
+        blocks = []
+        for idx, followup in enumerate(followups):
+            blocks.append(
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": followup
+                    },
+                    "accessory": {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "Ask Dhruv"
+                        },
+                        "value": followup,
+                        "action_id": "button"
+                    }
+                }
+            )
+        say(blocks=blocks, text=answer, thread_ts=thread_ts)
 
 def processURLs(text, thread_ts, team_id, bot_token, say):
     urlExtrator = URLExtract()

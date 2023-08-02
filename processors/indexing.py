@@ -76,9 +76,9 @@ class Indexing:
             statement = f"""
                 SELECT content, 1 - (embeddings <=> :embeddings) AS similarity
                 FROM {table_name}
-                WHERE 1 - (embeddings <=> :embeddings) > 0.7 AND thread_id = :thread_id
+                WHERE 1 - (embeddings <=> :embeddings) > 0.1 AND thread_id = :thread_id
                 ORDER BY similarity DESC
-                LIMIT 3
+                LIMIT 4
             """
             results = conn.execute(
                 text(statement),
@@ -90,6 +90,6 @@ class Indexing:
 
             documents = []
             for row in results.fetchall():
-                documents.append(Document(page_content=row["content"]))
+                documents.append(Document(page_content=row[0]))
             
             return documents
