@@ -70,40 +70,44 @@ class QAProcessor:
 
         followups = []
         messages = []
-        if len(docs):
-            joined_docs = '\n'.join(map(lambda doc: doc.page_content, docs))
-            system_prompt += f"""
-                Here is the context in tripple quotes.
 
-                ```
-                {joined_docs}
-                ```
-            """
-            messages = [
-                SystemMessage(content=system_prompt),
-                HumanMessage(content="Provide 5 interesting questions that can be asked from the context. Format your answer as JSON with key 'questions' which is a list of questions.")
-            ]
-        else:
-            system_prompt += f"""
-                Here is the question.
+        if len(chat_history) == 0:
+            if len(docs):
+                print(chat_history)
+                joined_docs = '\n'.join(map(lambda doc: doc.page_content, docs))
+                system_prompt += f"""
+                    Here is the context in tripple quotes.
 
-                ```
-                {text}
-                ```
-            """
-            messages = [
-                SystemMessage(content=system_prompt),
-                HumanMessage(content="Provide 5 interesting questions that can be asked as a followup to the provided question. Format your answer as JSON with key 'questions' which is a list of questions.")
-            ]
-        followup_answer = model(messages)
-        try:
-            followups_json = json.loads(followup_answer.content)
-            followups_json = followups_json["questions"] if "questions" in followups_json else []
+                    ```
+                    {joined_docs}
+                    ```
+                """
+                messages = [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content="Provide 5 interesting questions that can be asked from the context. Format your answer as JSON with key 'questions' which is a list of questions.")
+                ]
+            else:
+                system_prompt += f"""
+                    Here is the question.
 
-            for followup in followups_json:
-                followups.append(followup)
-        except Exception as err:
-            print(err)
+                    ```
+                    {text}
+                    ```
+                """
+                messages = [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content="Provide 5 interesting questions that can be asked as a followup to the provided question. Format your answer as JSON with key 'questions' which is a list of questions.")
+                ]
+            
+            followup_answer = model(messages)
+            try:
+                followups_json = json.loads(followup_answer.content)
+                followups_json = followups_json["questions"] if "questions" in followups_json else []
+
+                for followup in followups_json:
+                    followups.append(followup)
+            except Exception as err:
+                print(err)
         
         return (answer, followups)
             
