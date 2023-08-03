@@ -5,6 +5,9 @@ import requests
 import time
 
 import logging
+
+from integrations.confluence.index import ConfluenceClient
+
 logging.basicConfig(level=logging.INFO)
 
 from .indexing import Indexing
@@ -20,6 +23,7 @@ from langchain.document_loaders import TextLoader
 
 from bs4 import BeautifulSoup
 
+
 class URLProcessor:
 
     @staticmethod
@@ -34,15 +38,22 @@ class URLProcessor:
             pages = URLProcessor.get_pages_from_notion(client_id, url, parsed_url)
         elif url_type == "web":
             pages = URLProcessor.get_pages_from_web(client_id, url, parsed_url)
+            pages = get_pages_from_web(url, parsed_url)
+        elif url_type == 'confluence':
+            pages = get_pages_from_confluence(url, parsed_url)
 
         Indexing.save_in_index(client_id, index_md5, pages)
 
-    @staticmethod       
+
+    @staticmethod
     def determine_url_type(url):
         parsed_url = urlparse(url)
 
         if parsed_url.netloc == "www.notion.so":
             return ("notion", parsed_url)
+
+        if ConfluenceClient.is_confluence_page_url(parsed_url):
+            return ("confluence", parsed_url)
         else:
             return ("web", parsed_url)
 
@@ -99,7 +110,7 @@ class URLProcessor:
                 raise Exception("No Access")
 
             headers = {
-                'Authorization': f"Bearer {access_token}", 
+                'Authorization': f"Bearer {access_token}",
                 'Notion-Version': '2022-02-22'
             }
             start_cursor = None
@@ -116,22 +127,29 @@ class URLProcessor:
                     if "rich_text" in page[page_type] and page[page_type]["rich_text"]:
                         for text in page[page_type]["rich_text"]:
                             temp_file.write(bytes(text["plain_text"] + " ", 'utf-8'))
-                
+
                 if response_as_json["has_more"]:
                     start_cursor = response_as_json["next_cursor"]
                 else:
                     break
-            
+
             temp_file.flush()
-            
+
             loader = TextLoader(temp_file_path)
             pages = loader.load()
-            
+
             return pages
 
-    @staticmethod        
+    @staticmethod
     def get_pages_from_soup(url):
         pass
+
+
+def get_pages_from_confluence(url, parsed_url):
+    client = ConfluenceClient(domain=os.getenv('CONFLUENCE_DOMAIN'), username=os.getenv('CONFLUENCE_USERNAME'),
+                              api_token=os.getenv('CONFLUENCE_API_TOKEN'))
+    text = client.fetch_content_from_url(parsed_url)
+    return [Document(page_content=text, metadata={"source": url})]
 
 # Used to testing
 # if __name__ == "__main__":
