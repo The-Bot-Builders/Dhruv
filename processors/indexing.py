@@ -25,7 +25,7 @@ class Indexing:
         texts = splitter.split_documents(pages)
 
         with engine.connect() as conn:
-            table_name = f"{client_id}"
+            table_name = f"{client_id}_embeddings"
 
             statement = f"""
                 CREATE TABLE IF NOT EXISTS {table_name}(
@@ -60,7 +60,7 @@ class Indexing:
 
     @staticmethod
     def get_from_index(client_id, thread_id, query):
-        table_name = f"{client_id}"
+        table_name = f"{client_id}_embeddings"
         with engine.connect() as conn:
             statement = f"""
                 CREATE TABLE IF NOT EXISTS {table_name}(
