@@ -165,7 +165,7 @@ def common_event_handler(context, client, event, say):
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": "Interesting followup questions you ask to learn more:"
+                "text": "Interesting followup questions you can ask me to learn more:"
             }
         }]
         for idx, followup in enumerate(followups):

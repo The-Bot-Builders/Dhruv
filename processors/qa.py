@@ -39,8 +39,7 @@ class QAProcessor:
         if len(docs):
             joined_docs = '\n'.join(map(lambda doc: doc.page_content, docs))
             system_prompt += f"""
-                Answer the question directly and in details using the context provided in tripple quotes. If you don't find the answer in the context, do not make anything up.
-                Use lists and emojis. Format answer in slack markdown.
+                Answer the question directly using the context provided in tripple quotes. If you don't find the answer in the context, do not make anything up.
 
                 ```
                 {joined_docs}
@@ -48,8 +47,7 @@ class QAProcessor:
             """
         else:
             system_prompt += """
-                Answer the question directly and in details. Use lists and emojis.
-                Format answer in slack markdown.
+                Answer the question directly.
             """
 
         messages = [
@@ -71,6 +69,7 @@ class QAProcessor:
         ChatHistory.save_ai_response(client_id, index_md5, answer)
 
         followups = []
+        messages = []
         if len(docs):
             joined_docs = '\n'.join(map(lambda doc: doc.page_content, docs))
             system_prompt += f"""
@@ -80,20 +79,31 @@ class QAProcessor:
                 {joined_docs}
                 ```
             """
-        
             messages = [
                 SystemMessage(content=system_prompt),
                 HumanMessage(content="Provide 5 interesting questions that can be asked from the context. Format your answer as JSON with key 'questions' which is a list of questions.")
             ]
-            followup_answer = model(messages)
-            try:
-                followups_json = json.loads(followup_answer.content)
-                followups_json = followups_json["questions"] if "questions" in followups_json else []
+        else:
+            system_prompt += f"""
+                Here is the question.
 
-                for followup in followups_json:
-                    followups.append(followup)
-            except Exception as err:
-                print(err)
+                ```
+                {text}
+                ```
+            """
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content="Provide 5 interesting questions that can be asked as a followup to the provided question. Format your answer as JSON with key 'questions' which is a list of questions.")
+            ]
+        followup_answer = model(messages)
+        try:
+            followups_json = json.loads(followup_answer.content)
+            followups_json = followups_json["questions"] if "questions" in followups_json else []
+
+            for followup in followups_json:
+                followups.append(followup)
+        except Exception as err:
+            print(err)
         
         return (answer, followups)
             
