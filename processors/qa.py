@@ -7,7 +7,6 @@ logging.basicConfig(level=logging.INFO)
 
 from .indexing import Indexing
 from .chat_history import ChatHistory
-from .anaphor import Anaphor
 
 from langchain.chat_models import ChatOpenAI
 
@@ -26,9 +25,6 @@ class QAProcessor:
         index_md5 = hashlib.md5(thread_ts.encode()).hexdigest()
 
         chat_history = ChatHistory.get_chat_history(client_id, index_md5)
-        text = Anaphor.resolve(text, chat_history)
-        ChatHistory.save_human_query(client_id, index_md5, text)
-
         docs = Indexing.get_from_index(client_id, index_md5, text)
 
         system_prompt = f"""
@@ -58,8 +54,18 @@ class QAProcessor:
 
         messages = [
             SystemMessage(content=system_prompt),
-            HumanMessage(content=text)
         ]
+
+        for chat in chat_history:
+            if chat['ai']:
+                messages.append(AIMessage(content=chat['reply'][:30]))
+            else:
+                messages.append(HumanMessage(content=chat['reply']))
+        
+
+        messages.append(HumanMessage(content=text))
+        ChatHistory.save_human_query(client_id, index_md5, text)
+
         answer = model(messages)
         answer = answer.content
         ChatHistory.save_ai_response(client_id, index_md5, answer)
