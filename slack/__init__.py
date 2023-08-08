@@ -26,6 +26,8 @@ logging.basicConfig(level=logging.INFO)
 stage = os.environ.get('STAGE', 'local')
 app = None
 
+bot_name = os.environ.get('BOT_NAME', 'Dhruv')
+
 if stage == 'local':
     app = App(
         signing_secret=os.environ.get("SLACK_SIGNING_SECRET"),
@@ -81,19 +83,26 @@ def update_home_tab(client, event, logger):
                 "callback_id": "home_view",
                 "blocks": [
                     {
-                        "type": "section",
+                        "type": "header",
                         "text": {
-                            "type": "mrkdwn",
-                            "text": "Welcome to your _App's Home_*: :tada:"
+                            "type": "plain_text",
+                            "text": "Integrations",
+                            "emoji": True
                         }
                     },
                     {
-                        "type": "divider"},
+                        "type": "divider"
+                    },
                     {
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": "This button won't do much for now but you can set up a listener for it using the `actions()` method and passing its unique `action_id`. See an example in the `examples` folder within your Bolt app."
+                            "text": "Provide access to *@Dhruv* to read your *Notion* pages"
+                        },
+                        "accessory": {
+                            "type": "image",
+                            "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Notion-logo.svg/100px-Notion-logo.svg.png",
+                            "alt_text": "cute cat"
                         }
                     },
                     {
@@ -103,8 +112,38 @@ def update_home_tab(client, event, logger):
                                 "type": "button",
                                 "text": {
                                     "type": "plain_text",
-                                    "text": "Click me!"
-                                }
+                                    "text": "Add Access",
+                                    "emoji": True
+                                },
+                                "value": "click_me_123",
+                                "action_id": "actionId-0"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "Provide access to *@Dhruv* to read your *Google* docs"
+                        },
+                        "accessory": {
+                            "type": "image",
+                            "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Google_Docs_logo_%282014-2020%29.svg/47px-Google_Docs_logo_%282014-2020%29.svg.png",
+                            "alt_text": "cute cat"
+                        }
+                    },
+                    {
+                        "type": "actions",
+                        "elements": [
+                            {
+                                "type": "button",
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "Add Access",
+                                    "emoji": True
+                                },
+                                "value": "click_me_123",
+                                "action_id": "actionId-0"
                             }
                         ]
                     }
@@ -115,7 +154,7 @@ def update_home_tab(client, event, logger):
         logger.error(f"Error publishing home tab: {e}")
 
 @app.action("button")
-def button_click(ack, context, client, action, say):
+def ask_followup_button_click(ack, context, client, action, say):
     ack()
 
     (text, thread_id) = action['value'].split("<->")
