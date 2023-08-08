@@ -114,6 +114,22 @@ def update_home_tab(client, event, logger):
     except Exception as e:
         logger.error(f"Error publishing home tab: {e}")
 
+@app.action("button")
+def button_click(ack, context, client, action, say):
+    ack()
+
+    (text, thread_id) = action['value'].split("<->")
+    
+    team_id = context.get('team_id')
+    bot_token = context["authorize_result"]["bot_token"]
+
+    say(blocks=[{
+        "type": "section",
+        "text": {"type": "mrkdwn", "text": f"<@{context['user_id']}> asked '{text}'"}
+    }], text='', thread_ts=thread_id)
+    
+    common_message_handler(text, action, thread_id, team_id, bot_token, say, client)
+
 @app.event("app_mention")
 def app_mention_handler(context, client, event, say):
     common_event_handler(context, client, event, say)
@@ -126,39 +142,35 @@ def im_message_handler(context, client, event, say):
         common_event_handler(context, client, event, say)
 
 def common_event_handler(context, client, event, say):
-
     # Slack related
     if event.get('subtype', None) != None and event['subtype'] not in ["file_share"]:
         return NotImplemented
     
-    thread_ts = event.get("thread_ts", None) or event["ts"]
+    thread_id = event.get("thread_ts", None) or event["ts"]
     team_id = context.get('team_id')
     bot_token = context["authorize_result"]["bot_token"]
-
-    # conversations_in_thread = client.conversations_replies(
-    #     channel=event['channel'],
-    #     ts=thread_ts,
-    # )
-    # print('\n'.join(list(map(lambda x: x['text'], conversations_in_thread['messages']))))
 
     # Message formatting
     text = event['text']
     text = re.sub(r"<@[A-Z0-9]+>", "", text)
 
+    common_message_handler(text, event, thread_id, team_id, bot_token, say, client)
+
+def common_message_handler(text, meta, thread_id, team_id, bot_token, say, client):
+
     # Check for URL
-    processURLs(text, thread_ts, team_id, bot_token, say)
+    processURLs(text, meta, thread_id, team_id, bot_token, say, client)
 
     # Check for Files
-    if "files" in event:
-        processFiles(text, event['files'], thread_ts, team_id, bot_token, say)
+    processFiles(text, meta, thread_id, team_id, bot_token, say, client)
     
-    (answer, followups) = QAProcessor.process(text, thread_ts, team_id)
+    (answer, followups) = QAProcessor.process(text, thread_id, team_id)
 
     if answer:
         say(blocks=[{
             "type": "section",
             "text": {"type": "mrkdwn", "text": convert_markdown_to_slack(answer)}
-        }], text=answer, thread_ts=thread_ts)
+        }], text=answer, thread_ts=thread_id)
     
     if len(followups):
         blocks = [{
@@ -182,22 +194,22 @@ def common_event_handler(context, client, event, say):
                             "type": "plain_text",
                             "text": f"Ask {os.environ.get('BOT_NAME', 'Dhurv')}"
                         },
-                        "value": followup,
+                        "value": followup + "<->" + thread_id,
                         "action_id": "button"
                     }
                 }
             )
-        say(blocks=blocks, text=answer, thread_ts=thread_ts)
+        say(blocks=blocks, text=answer, thread_ts=thread_id)
 
-def processURLs(text, thread_ts, team_id, bot_token, say):
+def processURLs(text, meta, thread_id, team_id, bot_token, say, client):
     urlExtrator = URLExtract()
     urls = urlExtrator.find_urls(text)
 
     if (len(urls)):
         for idx, url in enumerate(urls):
-            say(f"Checking out the link {url}. Will let you know when I am done!", thread_ts=thread_ts)
+            say(f"Checking out the link {url}. Will let you know when I am done!", thread_ts=thread_id)
 
-            URLProcessor.process(url, thread_ts, team_id)
+            URLProcessor.process(url, thread_id, team_id)
         
             text = text.replace(url, "")
             text = text.strip()
@@ -206,32 +218,36 @@ def processURLs(text, thread_ts, team_id, bot_token, say):
             return
         
         if len(urls) > 1:
-            say(f"Finished reading the links. Let me summarize what I just read.", thread_ts=thread_ts)
+            say(f"Finished reading the links. Let me summarize what I just read.", thread_ts=thread_id)
         else:
-            say(f"Finished reading the link. Let me summarize what I just read.", thread_ts=thread_ts)
+            say(f"Finished reading the link. Let me summarize what I just read.", thread_ts=thread_id)
 
-def processFiles(text, files, thread_ts, team_id, bot_token, say):
+def processFiles(text, meta, thread_id, team_id, bot_token, say, client):
+    if "files" not in meta:
+        return
+    files = meta['files']
+
     for idx, file in enumerate(files):
         file_url = file['url_private']
         file_type = file['filetype']
 
         file_name = file_url.split("/")[-1]
-        say(f"Checking out the file {file_name}. Will let you know when I am done!", thread_ts=thread_ts)
+        say(f"Checking out the file {file_name}. Will let you know when I am done!", thread_ts=thread_id)
 
         response = requests.get(file_url, headers={'Authorization': f'Bearer {bot_token}'})
         with TempFileManager(file_name) as (temp_file_path, temp_file):
             temp_file.write(response.content)
             
-            processed = FileProcessor.process(file_type, temp_file_path, thread_ts, team_id)
+            processed = FileProcessor.process(file_type, temp_file_path, thread_id, team_id)
             if not processed:
-                say(f"Sorry, I am not able to read this type of files yet!", thread_ts=thread_ts)
+                say(f"Sorry, I am not able to read this type of files yet!", thread_ts=thread_id)
         
         if text != "":
             return
 
         if len(files) > 1:
-            say(f"Finished reading the files. Let me summarize what I just read.", thread_ts=thread_ts)
+            say(f"Finished reading the files. Let me summarize what I just read.", thread_ts=thread_id)
         else:
-            say(f"Finished reading the file. Let me summarize what I just read.", thread_ts=thread_ts)
+            say(f"Finished reading the file. Let me summarize what I just read.", thread_ts=thread_id)
 
 handler = SlackRequestHandler(app)
