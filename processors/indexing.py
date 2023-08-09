@@ -54,30 +54,20 @@ class Indexing:
 
     @staticmethod
     def get_from_index(client_id, thread_id, query):
-        table_name = f"{client_id}_embeddings"
         with engine.connect() as conn:
-            statement = f"""
-                CREATE TABLE IF NOT EXISTS {table_name}(
-                    id BIGSERIAL PRIMARY KEY,
-                    thread_id VARCHAR(1024),
-                    content TEXT,
-                    embeddings vector(384)
-                )
-            """
-            conn.execute(text(statement))
-            
             embed_query = embedding.embed_query(query)
             statement = f"""
                 SELECT content, 1 - (embeddings <=> :embeddings) AS similarity
-                FROM {table_name}
-                WHERE 1 - (embeddings <=> :embeddings) > 0.1 AND thread_id = :thread_id
+                FROM {TABLE_NAME}
+                WHERE 1 - (embeddings <=> :embeddings) > 0.2 AND thread_id = :thread_id AND client_id = :client_id
                 ORDER BY similarity DESC
-                LIMIT 4
+                LIMIT 10
             """
             results = conn.execute(
                 text(statement),
                 parameters={
                     'embeddings': f"{embedding.embed_query(query)}",
+                    'client_id': client_id,
                     'thread_id': thread_id
                 }
             )
