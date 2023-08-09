@@ -12,6 +12,8 @@ logging.basicConfig(level=logging.INFO)
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
+TABLE_NAME = "embeddings"
+
 embedding = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
 
 class Indexing:
@@ -25,24 +27,15 @@ class Indexing:
         texts = splitter.split_documents(pages)
 
         with engine.connect() as conn:
-            table_name = f"{client_id}_embeddings"
-
-            statement = f"""
-                CREATE TABLE IF NOT EXISTS {table_name}(
-                    id BIGSERIAL PRIMARY KEY,
-                    thread_id VARCHAR(1024),
-                    content TEXT,
-                    embeddings vector(384)
-                )
-            """
-            conn.execute(text(statement))
             for txt in texts:
                 statement = f"""
-                    INSERT INTO {table_name} (
+                    INSERT INTO {TABLE_NAME} (
+                        client_id,
                         thread_id,
                         content,
                         embeddings
                     ) VALUES (
+                        :client_id,
                         :thread_id,
                         :content,
                         :embeddings
@@ -51,6 +44,7 @@ class Indexing:
                 conn.execute(
                     text(statement),
                     parameters={
+                        'client_id': client_id,
                         'thread_id': thread_id,
                         'content': txt.page_content,
                         'embeddings': f"{embedding.embed_query(txt.page_content)}"

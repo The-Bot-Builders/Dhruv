@@ -6,31 +6,22 @@ from .db import engine, text
 import logging
 logging.basicConfig(level=logging.INFO)
 
+TABLE_NAME = "chat_history"
+
 class ChatHistory:
 
     @staticmethod
     def get_chat_history(client_id, thread_id):
-        table_name = f"{client_id}_chat_history"
-
         with engine.connect() as conn:
             statement = f"""
-                CREATE TABLE IF NOT EXISTS {table_name}(
-                    id BIGSERIAL PRIMARY KEY,
-                    thread_id VARCHAR(1024),
-                    reply TEXT,
-                    ai BOOLEAN
-                )
-            """
-            conn.execute(text(statement))
-
-            statement = f"""
                 SELECT reply, ai
-                FROM {table_name} 
-                WHERE thread_id = :thread_id
+                FROM {TABLE_NAME} 
+                WHERE client_id = :client_id AND thread_id = :thread_id
             """
             results = conn.execute(
                 text(statement), 
                 parameters={
+                    'client_id': client_id,
                     'thread_id': thread_id
                 }
             )
@@ -44,26 +35,16 @@ class ChatHistory:
 
     @staticmethod
     def save_ai_response(client_id, thread_id, response):
-        table_name = f"{client_id}_chat_history"
-
         with engine.connect() as conn:
             statement = f"""
-                CREATE TABLE IF NOT EXISTS {table_name}(
-                    id BIGSERIAL PRIMARY KEY,
-                    thread_id VARCHAR(1024),
-                    reply TEXT,
-                    ai BOOLEAN
-                )
-            """
-            conn.execute(text(statement))
-
-            statement = f"""
-                INSERT INTO {table_name}(
+                INSERT INTO {TABLE_NAME}(
+                    client_id,
                     thread_id,
                     reply,
                     ai
                 )
                 VALUES (
+                    :client_id,
                     :thread_id,
                     :reply,
                     TRUE
@@ -72,6 +53,7 @@ class ChatHistory:
             conn.execute(
                 text(statement), 
                 parameters={
+                    'client_id': client_id,
                     'thread_id': thread_id,
                     'reply': response
                 }
@@ -79,26 +61,16 @@ class ChatHistory:
 
     @staticmethod
     def save_human_query(client_id, thread_id, query):
-        table_name = f"{client_id}_chat_history"
-
         with engine.connect() as conn:
             statement = f"""
-                CREATE TABLE IF NOT EXISTS {table_name}(
-                    id BIGSERIAL PRIMARY KEY,
-                    thread_id VARCHAR(1024),
-                    reply TEXT,
-                    ai BOOLEAN
-                )
-            """
-            conn.execute(text(statement))
-
-            statement = f"""
-                INSERT INTO {table_name}(
+                INSERT INTO {TABLE_NAME}(
+                    client_id,
                     thread_id,
                     reply,
                     ai
                 )
                 VALUES (
+                    :client_id,
                     :thread_id,
                     :reply,
                     FALSE
@@ -107,6 +79,7 @@ class ChatHistory:
             conn.execute(
                 text(statement), 
                 parameters={
+                    'client_id': client_id,
                     'thread_id': thread_id,
                     'reply': query
                 }
