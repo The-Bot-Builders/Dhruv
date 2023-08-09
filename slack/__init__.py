@@ -1,6 +1,14 @@
 import os
 import logging
 
+logging.basicConfig(level=logging.INFO)
+
+from dotenv import load_dotenv, find_dotenv
+
+stage = os.environ.get('STAGE', 'local')
+env_file = '.prod.env' if stage == 'prod' else '.local.env'
+load_dotenv(find_dotenv(filename=env_file))
+
 from slack_bolt import App
 from slack_bolt.adapter.flask import SlackRequestHandler
 from slack_bolt.oauth.callback_options import CallbackOptions, SuccessArgs, FailureArgs
@@ -10,6 +18,7 @@ from slack_bolt.response import BoltResponse
 import json
 import requests
 import re
+import urllib.parse
 
 from urlextract import URLExtract
 
@@ -20,10 +29,6 @@ from processors.url import URLProcessor
 
 from .slack_formatting import convert_markdown_to_slack
 
-import logging
-logging.basicConfig(level=logging.INFO)
-
-stage = os.environ.get('STAGE', 'local')
 app = None
 
 bot_name = os.environ.get('BOT_NAME', 'Dhruv')
@@ -74,7 +79,10 @@ else:
     )
 
 @app.event("app_home_opened")
-def update_home_tab(client, event, logger):
+def update_home_tab(context, client, event, logger):
+    team_id = context.get('team_id')
+    notion_redirect_uri_encoded = urllib.parse.quote(os.environ.get('NOTION_REDIRECT_URI'))
+
     try:
         client.views_publish(
             user_id=event["user"],
@@ -115,8 +123,9 @@ def update_home_tab(client, event, logger):
                                     "text": "Add Access",
                                     "emoji": True
                                 },
-                                "value": "click_me_123",
-                                "action_id": "actionId-0"
+                                "url": f"https://api.notion.com/v1/oauth/authorize?state={team_id}&client_id=4ccd95a3-d835-4e46-9bb0-2a74d425d350&response_type=code&owner=user&redirect_uri={notion_redirect_uri_encoded}",
+                                "value": "add_notion",
+                                "action_id": "add_integration"
                             }
                         ]
                     },
@@ -168,6 +177,10 @@ def ask_followup_button_click(ack, context, client, action, say):
     }], text='', thread_ts=thread_id)
     
     common_message_handler(text, action, thread_id, team_id, bot_token, say, client)
+
+@app.action("add_integration")
+def add_integration(ack, context, client, action, say):
+    ack()
 
 @app.event("app_mention")
 def app_mention_handler(context, client, event, say):

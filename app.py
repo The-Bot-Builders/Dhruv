@@ -1,9 +1,6 @@
 import os
-
-from dotenv import load_dotenv, find_dotenv
-
-env_file = '.prod.env' if os.environ.get('STAGE', 'local') == 'prod' else '.local.env'
-load_dotenv(find_dotenv(filename=env_file))
+import requests
+import base64
 
 from slack import handler
 
@@ -16,6 +13,9 @@ logging.basicConfig(level=logging.INFO)
 # Initializes your app with your bot token and signing secret
 flask_app = Flask(__name__)
 
+def base64_encode(string):
+    return base64.b64encode(string.encode('ascii')).decode('ascii')
+
 @flask_app.route("/slack/events", methods=["POST"])
 def slack_events():
     return handler.handle(request)
@@ -27,6 +27,14 @@ def slack_oauth_redirect():
 @flask_app.route("/slack/install", methods=["GET"])
 def slack_install():
     return handler.handle(request)
+
+@flask_app.route("/notion/oauth_redirect", methods=["GET"])
+def notion_oauth_redirect():
+    code = request.args.get('code')
+    client_id = request.args.get('state')
+    
+    
+    return "OK"
 
 @flask_app.route('/', methods=["GET"])
 def index():
