@@ -1,6 +1,7 @@
 import os
 import json
 import requests
+import base64
 
 from processors.db import engine, text
 

@@ -1,15 +1,17 @@
 import os
-import requests
-import base64
+
+from dotenv import load_dotenv, find_dotenv
+env_file = '.prod.env' if os.environ.get('STAGE', 'local') == 'prod' else '.local.env'
+load_dotenv(find_dotenv(filename=env_file))
+
+import logging
+logging.basicConfig(level=logging.INFO)
 
 from slack import handler
 from processors.integrations import NotionIntegration
 
 from flask import Flask, request, render_template
 from waitress import serve
-
-import logging
-logging.basicConfig(level=logging.INFO)
 
 # Initializes your app with your bot token and signing secret
 flask_app = Flask(__name__)

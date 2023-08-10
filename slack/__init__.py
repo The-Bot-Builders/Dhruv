@@ -3,12 +3,6 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
-from dotenv import load_dotenv, find_dotenv
-
-stage = os.environ.get('STAGE', 'local')
-env_file = '.prod.env' if stage == 'prod' else '.local.env'
-load_dotenv(find_dotenv(filename=env_file))
-
 from slack_bolt import App
 from slack_bolt.adapter.flask import SlackRequestHandler
 from slack_bolt.oauth.callback_options import CallbackOptions, SuccessArgs, FailureArgs
@@ -30,7 +24,7 @@ from processors.url import URLProcessor
 from .slack_formatting import convert_markdown_to_slack
 
 app = None
-
+stage = os.environ.get('STAGE', 'local')
 bot_name = os.environ.get('BOT_NAME', 'Dhruv')
 
 if stage == 'local':
