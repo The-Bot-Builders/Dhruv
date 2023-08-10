@@ -49,7 +49,7 @@ class NotionIntegration:
     def get_access_token(client_id):
         with engine.connect() as conn:
             statement = f"""
-                SELECT access_info FROM {TABLE_NAME} 
+                SELECT access_info ->> 'access_token' as access_token FROM {TABLE_NAME} 
                 WHERE client_id = :client_id AND integration = :integration
             """
             result = conn.execute(
@@ -59,7 +59,7 @@ class NotionIntegration:
                     'integration': 'notion'
                 }
             )
-            return json.loads(result.fetchone()[0])
+            return result.fetchone()[0]
 
     @staticmethod
     def base64_encode(string):

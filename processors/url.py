@@ -9,6 +9,7 @@ logging.basicConfig(level=logging.INFO)
 
 from .indexing import Indexing
 from .file import TempFileManager
+from .integrations import NotionIntegration
 
 from langchain.utilities import ApifyWrapper
 from langchain.document_loaders.base import Document
