@@ -25,18 +25,22 @@ class NotionIntegration:
             statement = f"""
                 INSERT INTO {TABLE_NAME} (
                     client_id,
+                    integration,
                     access_info
                 ) VALUES (
                     :client_id,
+                    :integration,
                     :access_info
                 ) ON CONFLICT (
-                    client_id
+                    client_id,
+                    integration
                 ) DO UPDATE SET access_info = EXCLUDED.access_info
             """
             conn.execute(
                 text(statement),
                 parameters={
                     'client_id': client_id,
+                    'integration': 'notion',
                     'access_info': json.dumps(response.json())
                 }
             )
@@ -45,12 +49,14 @@ class NotionIntegration:
     def get_access_token(client_id):
         with engine.connect() as conn:
             statement = f"""
-                SELECT access_info FROM {TABLE_NAME} WHERE client_id = :client_id
+                SELECT access_info FROM {TABLE_NAME} 
+                WHERE client_id = :client_id AND integration = :integration
             """
             result = conn.execute(
                 text(statement),
                 parameters={
-                    'client_id': client_id
+                    'client_id': client_id,
+                    'integration': 'notion'
                 }
             )
             return json.loads(result.fetchone()[0])
