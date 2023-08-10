@@ -59,7 +59,12 @@ class NotionIntegration:
                     'integration': 'notion'
                 }
             )
-            return result.fetchone()[0]
+            row = result.fetchone()
+
+            if row is None:
+                return None
+            
+            return row[0]
 
     @staticmethod
     def base64_encode(string):

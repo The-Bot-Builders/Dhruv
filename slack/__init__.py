@@ -255,7 +255,10 @@ def processURLs(text, meta, thread_id, team_id, bot_token, say, client):
         for idx, url in enumerate(urls):
             say(f"Checking out the link {url}. Will let you know when I am done!", thread_ts=thread_id)
 
-            URLProcessor.process(url, thread_id, team_id)
+            try:
+                URLProcessor.process(url, thread_id, team_id)
+            except Exception as e:
+                say(f"Sorry, failed to read the URL. Getting this this error: {e}", thread_ts=thread_id)
         
             text = text.replace(url, "")
             text = text.strip()

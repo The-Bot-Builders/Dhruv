@@ -95,6 +95,9 @@ class URLProcessor:
         with TempFileManager(page_id) as (temp_file_path, temp_file):
 
             access_token = NotionIntegration.get_access_token(client_id)
+            if not access_token:
+                raise Exception("No Access")
+
             headers = {
                 'Authorization': f"Bearer {access_token}", 
                 'Notion-Version': '2022-02-22'
