@@ -47,7 +47,7 @@ class URLProcessor:
             return ("web", parsed_url)
 
     @staticmethod
-    def get_pages_from_web(client, url, parsed_url):
+    def get_pages_from_web(client_id, url, parsed_url):
         response = requests.get(url, timeout=5)
         soup = BeautifulSoup(response.text, 'html.parser')
         for undesired_div in ["sidebar", "header", "footer"]:
