@@ -3,6 +3,7 @@ import requests
 import base64
 
 from slack import handler
+from processors.integrations import NotionIntegration
 
 from flask import Flask, request, render_template
 from waitress import serve
@@ -12,9 +13,6 @@ logging.basicConfig(level=logging.INFO)
 
 # Initializes your app with your bot token and signing secret
 flask_app = Flask(__name__)
-
-def base64_encode(string):
-    return base64.b64encode(string.encode('ascii')).decode('ascii')
 
 @flask_app.route("/slack/events", methods=["POST"])
 def slack_events():
@@ -33,7 +31,7 @@ def notion_oauth_redirect():
     code = request.args.get('code')
     client_id = request.args.get('state')
     
-    
+    NotionIntegration.process(client_id, code)
     return "OK"
 
 @flask_app.route('/', methods=["GET"])
