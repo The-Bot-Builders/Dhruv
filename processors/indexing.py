@@ -77,3 +77,27 @@ class Indexing:
                 documents.append(Document(page_content=row[0]))
             
             return documents
+
+
+    @staticmethod
+    def get_all(client_id, thread_id, query):
+        with engine.connect() as conn:
+            embed_query = embedding.embed_query(query)
+            statement = f"""
+                SELECT content
+                FROM {TABLE_NAME}
+                WHERE thread_id = :thread_id AND client_id = :client_id
+            """
+            results = conn.execute(
+                text(statement),
+                parameters={
+                    'client_id': client_id,
+                    'thread_id': thread_id
+                }
+            )
+
+            documents = []
+            for row in results.fetchall():
+                documents.append(Document(page_content=row[0]))
+            
+            return documents

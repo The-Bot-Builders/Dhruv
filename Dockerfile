@@ -18,6 +18,8 @@ RUN python -m pip install torch==2.0.1+cpu -f https://download.pytorch.org/whl/t
 RUN python -m pip install torchvision==0.15.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
 COPY heavy_requirements.txt .
 RUN python -m pip install -r heavy_requirements.txt
+COPY heavy_requirements_2.txt .
+RUN python -m pip install -r heavy_requirements.txt
 
 COPY requirements.txt .
 RUN python -m pip install -r requirements.txt

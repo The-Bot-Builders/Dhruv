@@ -8,6 +8,8 @@ logging.basicConfig(level=logging.INFO)
 from .indexing import Indexing
 from .chat_history import ChatHistory
 
+from summarizer import Summarizer
+
 from langchain.chat_models import ChatOpenAI
 
 from langchain.schema import (
@@ -16,16 +18,17 @@ from langchain.schema import (
     SystemMessage
 )
 
+from langchain.docstore.document import Document
+
 model = ChatOpenAI(temperature=0.0)
+summarize = Summarizer()
 
 class QAProcessor:
 
     @staticmethod
     def process(text, thread_ts, client_id):
+        text = text.strip()
         index_md5 = hashlib.md5(thread_ts.encode()).hexdigest()
-
-        chat_history = ChatHistory.get_chat_history(client_id, index_md5)
-        docs = Indexing.get_from_index(client_id, index_md5, text)
 
         system_prompt = f"""
             Your name is {os.environ.get('BOT_NAME', 'Dhurv')}.
@@ -35,7 +38,19 @@ class QAProcessor:
             You were made by theBotBuilders.com team.
         """
 
-        # Get the answer
+        chat_history = ChatHistory.get_chat_history(client_id, index_md5)
+
+        docs = None
+        answer = None
+        if text == "" or "summarize" in text.lower() or "summary" in text.lower():
+            text = "Summarize the content"
+            all_docs = Indexing.get_all(client_id, index_md5, text)
+            joined_docs = '\n'.join(map(lambda doc: doc.page_content, all_docs))
+            summary = summarize(joined_docs, ratio=0.1)
+            docs = [Document(page_content=summary)]
+        else:
+            docs = Indexing.get_from_index(client_id, index_md5, text)
+                
         if len(docs):
             joined_docs = '\n'.join(map(lambda doc: doc.page_content, docs))
             system_prompt += f"""
@@ -68,12 +83,12 @@ class QAProcessor:
         answer = answer.content
         ChatHistory.save_ai_response(client_id, index_md5, answer)
 
+        # Followups
         followups = []
         messages = []
 
         if len(chat_history) == 0:
             if len(docs):
-                print(chat_history)
                 joined_docs = '\n'.join(map(lambda doc: doc.page_content, docs))
                 system_prompt += f"""
                     Here is the context in tripple quotes.

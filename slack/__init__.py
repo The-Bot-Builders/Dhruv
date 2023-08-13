@@ -295,8 +295,12 @@ def processFiles(text, meta, thread_id, team_id, bot_token, say, client):
             return
 
         if len(files) > 1:
-            say(f"Finished reading the files. Let me summarize what I just read.", thread_ts=thread_id)
+            say(f"Finished reading the files.", thread_ts=thread_id)
         else:
-            say(f"Finished reading the file. Let me summarize what I just read.", thread_ts=thread_id)
+            say(f"Finished reading the file.", thread_ts=thread_id)
+        
+        text = text.strip()
+        if not text:
+            say(f"Let me summarize the content. Please be patient.", thread_ts=thread_id)
 
 handler = SlackRequestHandler(app)
