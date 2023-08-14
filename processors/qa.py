@@ -46,7 +46,7 @@ class QAProcessor:
             text = "Summarize the content. Use Lists as much possible."
             all_docs = Indexing.get_all(client_id, index_md5, text)
             joined_docs = '\n'.join(map(lambda doc: doc.page_content, all_docs))
-            summary = summarize(joined_docs, ratio=0.1, num_sentences=10)
+            summary = summarize(joined_docs, ratio=0.2, num_sentences=10)
             docs = [Document(page_content=summary)]
         else:
             docs = Indexing.get_from_index(client_id, index_md5, text)
