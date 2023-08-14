@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO)
 from .indexing import Indexing
 from .chat_history import ChatHistory
 
-from summarizer import Summarizer
+from summarizer.sbert import SBertSummarizer
 
 from langchain.chat_models import ChatOpenAI
 
@@ -21,7 +21,7 @@ from langchain.schema import (
 from langchain.docstore.document import Document
 
 model = ChatOpenAI(temperature=0.0)
-summarize = Summarizer()
+summarize = SBertSummarizer('paraphrase-MiniLM-L6-v2')
 
 class QAProcessor:
 
@@ -46,7 +46,7 @@ class QAProcessor:
             text = "Summarize the content"
             all_docs = Indexing.get_all(client_id, index_md5, text)
             joined_docs = '\n'.join(map(lambda doc: doc.page_content, all_docs))
-            summary = summarize(joined_docs, ratio=0.1)
+            summary = summarize(joined_docs, ratio=0.1, num_sentences=5)
             docs = [Document(page_content=summary)]
         else:
             docs = Indexing.get_from_index(client_id, index_md5, text)
