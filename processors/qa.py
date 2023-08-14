@@ -43,10 +43,10 @@ class QAProcessor:
         docs = None
         answer = None
         if text == "" or "summarize" in text.lower() or "summary" in text.lower():
-            text = "Summarize the content"
+            text = "Summarize the content. Use Lists as much possible."
             all_docs = Indexing.get_all(client_id, index_md5, text)
             joined_docs = '\n'.join(map(lambda doc: doc.page_content, all_docs))
-            summary = summarize(joined_docs, ratio=0.1, num_sentences=5)
+            summary = summarize(joined_docs, ratio=0.1, num_sentences=10)
             docs = [Document(page_content=summary)]
         else:
             docs = Indexing.get_from_index(client_id, index_md5, text)
