@@ -42,7 +42,9 @@ class QAProcessor:
 
         docs = None
         answer = None
+        summary_query = False
         if text == "" or "summarize" in text.lower() or "summary" in text.lower():
+            summary_query = True
             text = "Summarize the content. Use Lists as much possible."
             all_docs = Indexing.get_all(client_id, index_md5, text)
             joined_docs = '\n'.join(map(lambda doc: doc.page_content, all_docs))
@@ -75,13 +77,16 @@ class QAProcessor:
             else:
                 messages.append(HumanMessage(content=chat['reply']))
         
-
         messages.append(HumanMessage(content=text))
-        ChatHistory.save_human_query(client_id, index_md5, text)
+
+        if not summary_query:
+            ChatHistory.save_human_query(client_id, index_md5, text)
 
         answer = model(messages)
         answer = answer.content
-        ChatHistory.save_ai_response(client_id, index_md5, answer)
+
+        if not summary_query:
+            ChatHistory.save_ai_response(client_id, index_md5, answer)
 
         # Followups
         followups = []
