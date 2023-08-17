@@ -17,7 +17,7 @@ db_url = URL.create(
 db_url_ssl = db_url + f"?sslmode=require&sslrootcert={os.environ.get('DB_ROOT_CERTIFICATE')}" if os.environ.get('STAGE', 'local') == 'prod' else db_url
 
 engine = create_engine(
-    db_url_ssl, 
+    db_url, 
     isolation_level='AUTOCOMMIT',
     pool_size=20, 
     max_overflow=0
