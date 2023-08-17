@@ -12,11 +12,12 @@ db_url = URL.create(
     host=os.getenv("DB_URL"),
     port=int(os.getenv("DB_PORT")),
     username=os.getenv("DB_USERNAME"),
-    password=os.getenv("DB_PASSWORD"),
+    password=os.getenv("DB_PASSWORD")
 )
+db_url_ssl = db_url + f"?sslmode=require&sslrootcert={os.environ.get('DB_ROOT_CERTIFICATE')}" if os.environ.get('STAGE', 'local') == 'prod' else db_url
 
 engine = create_engine(
-    db_url, 
+    db_url_ssl, 
     isolation_level='AUTOCOMMIT',
     pool_size=20, 
     max_overflow=0
