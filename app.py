@@ -1,6 +1,8 @@
 import os
 
 from dotenv import load_dotenv, find_dotenv
+
+
 env_file = '.prod.env' if os.environ.get('STAGE', 'local') == 'prod' else '.local.env'
 load_dotenv(find_dotenv(filename=env_file))
 
@@ -9,12 +11,16 @@ logging.basicConfig(level=logging.INFO)
 
 from slack import handler
 from processors.integrations import NotionIntegration
+from integrations.confluence import ConfluenceClient
+from integrations.google_docs import GoogleDocsClient
+
 
 from flask import Flask, request, render_template
 from waitress import serve
 
 # Initializes your app with your bot token and signing secret
 flask_app = Flask(__name__)
+flask_app.config['PREFFERED_URL_SCHEME'] = 'https'
 
 @flask_app.route("/slack/events", methods=["POST"])
 def slack_events():
@@ -34,6 +40,25 @@ def notion_oauth_redirect():
     client_id = request.args.get('state')
     
     NotionIntegration.process(client_id, code)
+    return "OK"
+
+@flask_app.route("/confluence/oauth_redirect", methods=["GET"])
+def confluence_oauth_redirect():
+    state = request.args.get('state')
+    code = request.args.get('code')
+    client = ConfluenceClient(state)
+    print(request)
+    client.save_token(state, code)
+    # confluence.process(state, code)
+    return "OK"
+
+@flask_app.route("/google/oauth_redirect", methods=["GET"])
+def google_oauth_redirect():
+    state = request.args.get('state')
+    code = request.args.get('code')
+    client = GoogleDocsClient(state)
+    print(request)
+    client.save_token(state, code)
     return "OK"
 
 @flask_app.route('/', methods=["GET"])

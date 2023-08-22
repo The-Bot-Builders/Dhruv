@@ -6,7 +6,7 @@ import time
 
 import logging
 
-from integrations.confluence.index import ConfluenceClient
+from integrations.confluence import ConfluenceClient
 
 logging.basicConfig(level=logging.INFO)
 
@@ -25,11 +25,14 @@ from bs4 import BeautifulSoup
 
 
 class URLProcessor:
+    
+
 
     @staticmethod
     def process(url, index, client_id):
         index_md5 = hashlib.md5(index.encode()).hexdigest()
-        document_md5 = hashlib.md5(url.encode()).hexdigest()
+        # document_md5 = hashlib.md5(url.encode()).hexdigest()
+        confluence_client = ConfluenceClient(client_id)
 
         (url_type, parsed_url) = URLProcessor.determine_url_type(url)
         
@@ -38,9 +41,8 @@ class URLProcessor:
             pages = URLProcessor.get_pages_from_notion(client_id, url, parsed_url)
         elif url_type == "web":
             pages = URLProcessor.get_pages_from_web(client_id, url, parsed_url)
-            pages = get_pages_from_web(url, parsed_url)
         elif url_type == 'confluence':
-            pages = get_pages_from_confluence(url, parsed_url)
+            pages = confluence_client.get_pages_from_confluence(url, parsed_url)
 
         Indexing.save_in_index(client_id, index_md5, pages)
 
@@ -52,8 +54,8 @@ class URLProcessor:
         if parsed_url.netloc == "www.notion.so":
             return ("notion", parsed_url)
 
-        if ConfluenceClient.is_confluence_page_url(parsed_url):
-            return ("confluence", parsed_url)
+        # if ConfluenceClient(client_id).is_confluence_page_url(parsed_url):
+        #     return ("confluence", parsed_url)
         else:
             return ("web", parsed_url)
 
@@ -144,12 +146,12 @@ class URLProcessor:
     def get_pages_from_soup(url):
         pass
 
-
-def get_pages_from_confluence(url, parsed_url):
-    client = ConfluenceClient(domain=os.getenv('CONFLUENCE_DOMAIN'), username=os.getenv('CONFLUENCE_USERNAME'),
-                              api_token=os.getenv('CONFLUENCE_API_TOKEN'))
-    text = client.fetch_content_from_url(parsed_url)
-    return [Document(page_content=text, metadata={"source": url})]
+    # @staticmethod
+    # def get_pages_from_confluence(url, parsed_url):
+    #     client = ConfluenceIntegration(domain=os.getenv('CONFLUENCE_DOMAIN'), username=os.getenv('CONFLUENCE_USERNAME'),
+    #                               api_token=os.getenv('CONFLUENCE_API_TOKEN'))
+    #     text = client.fetch_content_from_url(parsed_url)
+    #     return [Document(page_content=text, metadata={"source": url})]
 
 # Used to testing
 # if __name__ == "__main__":
