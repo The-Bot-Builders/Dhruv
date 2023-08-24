@@ -3,8 +3,7 @@ Auth class to handle authorization and token fetch.
 """
 import os
 from datetime import datetime
-from typing import List
-from urllib.parse import urlencode
+import warnings
 
 
 from oauthlib.oauth2 import WebApplicationClient
@@ -49,10 +48,13 @@ class OAuth2Client:
         return authorization_url
 
     def save_token(self, client_id, code):
-        token = self.oauth.fetch_token(self.token_url, code=code, client_secret=self.client_secret)
-        print(token)
-        # Store the token in the database
-        store_encrypted_token(client_id, integration=self.integration, token=token, key=self.key)
+        with warnings.catch_warnings():
+            warnings.simplefilter("always")
+            # Your token exchange code
+            token = self.oauth.fetch_token(self.token_url, code=code, client_secret=self.client_secret)
+            print(token)
+            # Store the token in the database
+            store_encrypted_token(client_id, integration=self.integration, token=token, key=self.key)
 
     def get_token(self):
         # Retrieve decrypted token from database
@@ -97,7 +99,3 @@ class OAuth2Client:
 
         client = OAuth2Session(self.client_id, token=self.token)
         return client.request(method, url, **kwargs)
-
-"""
-https://auth.atlassian.com/authorize?audience=api.atlassian.com&client_id=twW8fdEK4BtSZrYq8PotJmdnqa0tfwLq&scope=read%3Aconfluence-space.summary%20read%3Aconfluence-props%20read%3Aconfluence-content.summary%20read%3Aconfluence-content.all%20write%3Aconfluence-content%20write%3Aconfluence-file%20write%3Aconfluence-props%20search%3Aconfluence%20read%3Aconfluence-content.permission%20read%3Aconfluence-user%20read%3Aconfluence-groups%20readonly%3Acontent.attachment%3Aconfluence%20write%3Aconfluence-space%20manage%3Aconfluence-configuration%20write%3Aconfluence-groups&redirect_uri=https%3A%2F%2Fc81e-2406-7400-56-4cc9-b814-f57e-1bf9-e2e3.ngrok-free.app%2Fconfluence%2Foauth_redirect&state=${YOUR_USER_BOUND_VALUE}&response_type=code&prompt=consent
-"""

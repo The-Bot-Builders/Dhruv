@@ -1,4 +1,3 @@
-import psycopg2
 from cryptography.fernet import Fernet
 import json
 from processors.db import engine, text

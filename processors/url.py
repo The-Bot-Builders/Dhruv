@@ -7,6 +7,7 @@ import time
 import logging
 
 from integrations.confluence import ConfluenceClient
+from integrations.google_docs import GoogleDocsClient
 
 logging.basicConfig(level=logging.INFO)
 
@@ -43,6 +44,8 @@ class URLProcessor:
             pages = URLProcessor.get_pages_from_web(client_id, url, parsed_url)
         elif url_type == 'confluence':
             pages = confluence_client.get_pages_from_confluence(url, parsed_url)
+        elif url_type == 'google_docs':
+            pages = URLProcessor.get_pages_from_google_docs(client_id, url, parsed_url)
 
         Indexing.save_in_index(client_id, index_md5, pages)
 
@@ -53,6 +56,8 @@ class URLProcessor:
 
         if parsed_url.netloc == "www.notion.so":
             return ("notion", parsed_url)
+        elif parsed_url.netloc == "docs.google.com":
+            return ("google_docs", parsed_url)
 
         # if ConfluenceClient(client_id).is_confluence_page_url(parsed_url):
         #     return ("confluence", parsed_url)
@@ -145,6 +150,14 @@ class URLProcessor:
     @staticmethod
     def get_pages_from_soup(url):
         pass
+
+    @staticmethod
+    def get_pages_from_google_docs(client_id, url, parsed_url):
+        google_docs_client = GoogleDocsClient(client_id)
+        text = google_docs_client.get_document_content(url)
+        if not text:
+            return []
+        return [Document(page_content=text, metadata={"source": url})]
 
     # @staticmethod
     # def get_pages_from_confluence(url, parsed_url):
