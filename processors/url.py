@@ -5,6 +5,10 @@ import requests
 import time
 
 import logging
+
+from integrations.confluence import ConfluenceClient
+from integrations.google_docs import GoogleDocsClient
+
 logging.basicConfig(level=logging.INFO)
 
 from .indexing import Indexing
@@ -20,12 +24,16 @@ from langchain.document_loaders import TextLoader
 
 from bs4 import BeautifulSoup
 
+
 class URLProcessor:
+    
+
 
     @staticmethod
     def process(url, index, client_id):
         index_md5 = hashlib.md5(index.encode()).hexdigest()
-        document_md5 = hashlib.md5(url.encode()).hexdigest()
+        # document_md5 = hashlib.md5(url.encode()).hexdigest()
+        confluence_client = ConfluenceClient(client_id)
 
         (url_type, parsed_url) = URLProcessor.determine_url_type(url)
         
@@ -34,15 +42,25 @@ class URLProcessor:
             pages = URLProcessor.get_pages_from_notion(client_id, url, parsed_url)
         elif url_type == "web":
             pages = URLProcessor.get_pages_from_web(client_id, url, parsed_url)
+        elif url_type == 'confluence':
+            pages = confluence_client.get_pages_from_confluence(url, parsed_url)
+        elif url_type == 'google_docs':
+            pages = URLProcessor.get_pages_from_google_docs(client_id, url, parsed_url)
 
         Indexing.save_in_index(client_id, index_md5, pages)
 
-    @staticmethod       
+
+    @staticmethod
     def determine_url_type(url):
         parsed_url = urlparse(url)
 
         if parsed_url.netloc == "www.notion.so":
             return ("notion", parsed_url)
+        elif parsed_url.netloc == "docs.google.com":
+            return ("google_docs", parsed_url)
+
+        # if ConfluenceClient(client_id).is_confluence_page_url(parsed_url):
+        #     return ("confluence", parsed_url)
         else:
             return ("web", parsed_url)
 
@@ -99,7 +117,7 @@ class URLProcessor:
                 raise Exception("No Access")
 
             headers = {
-                'Authorization': f"Bearer {access_token}", 
+                'Authorization': f"Bearer {access_token}",
                 'Notion-Version': '2022-02-22'
             }
             start_cursor = None
@@ -116,22 +134,37 @@ class URLProcessor:
                     if "rich_text" in page[page_type] and page[page_type]["rich_text"]:
                         for text in page[page_type]["rich_text"]:
                             temp_file.write(bytes(text["plain_text"] + " ", 'utf-8'))
-                
+
                 if response_as_json["has_more"]:
                     start_cursor = response_as_json["next_cursor"]
                 else:
                     break
-            
+
             temp_file.flush()
-            
+
             loader = TextLoader(temp_file_path)
             pages = loader.load()
-            
+
             return pages
 
-    @staticmethod        
+    @staticmethod
     def get_pages_from_soup(url):
         pass
+
+    @staticmethod
+    def get_pages_from_google_docs(client_id, url, parsed_url):
+        google_docs_client = GoogleDocsClient(client_id)
+        text = google_docs_client.get_document_content(url)
+        if not text:
+            return []
+        return [Document(page_content=text, metadata={"source": url})]
+
+    # @staticmethod
+    # def get_pages_from_confluence(url, parsed_url):
+    #     client = ConfluenceIntegration(domain=os.getenv('CONFLUENCE_DOMAIN'), username=os.getenv('CONFLUENCE_USERNAME'),
+    #                               api_token=os.getenv('CONFLUENCE_API_TOKEN'))
+    #     text = client.fetch_content_from_url(parsed_url)
+    #     return [Document(page_content=text, metadata={"source": url})]
 
 # Used to testing
 # if __name__ == "__main__":

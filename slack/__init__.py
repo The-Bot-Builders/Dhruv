@@ -1,18 +1,14 @@
 import os
-import logging
 
-logging.basicConfig(level=logging.INFO)
-
-from slack_bolt import App
-from slack_bolt.adapter.flask import SlackRequestHandler
-from slack_bolt.oauth.callback_options import CallbackOptions, SuccessArgs, FailureArgs
-from slack_bolt.response import BoltResponse
-
-
-import json
-import requests
 import re
 import urllib.parse
+import logging
+from slack_bolt import App
+from slack_bolt.adapter.flask import SlackRequestHandler
+
+
+import requests
+
 
 from urlextract import URLExtract
 
@@ -21,7 +17,12 @@ from processors.file import TempFileManager, FileProcessor
 from processors.qa import QAProcessor
 from processors.url import URLProcessor
 
+from integrations.confluence import ConfluenceClient
+from integrations.google_docs import GoogleDocsClient
+
 from .slack_formatting import convert_markdown_to_slack
+
+logging.basicConfig(level=logging.INFO)
 
 app = None
 stage = os.environ.get('STAGE', 'local')
@@ -32,7 +33,7 @@ if stage == 'local':
         signing_secret=os.environ.get("SLACK_SIGNING_SECRET"),
         token=os.environ.get("SLACK_BOT_TOKEN")
     )
-else: 
+else:
     from sqlalchemy_utils import create_database, database_exists
     from slack_bolt.oauth.oauth_settings import OAuthSettings
     from slack_sdk.oauth.installation_store.sqlalchemy import SQLAlchemyInstallationStore
@@ -49,7 +50,7 @@ else:
         engine=engine
     )
     state_store.metadata.create_all(engine)
-    
+
     oauth_settings = OAuthSettings(
         client_id=os.environ.get("SLACK_CLIENT_ID"),
         client_secret=os.environ.get("SLACK_CLIENT_SECRET"),
@@ -76,6 +77,10 @@ else:
 def update_home_tab(context, client, event, logger):
     team_id = context.get('team_id')
     notion_redirect_uri_encoded = urllib.parse.quote(os.environ.get('NOTION_REDIRECT_URI'))
+    confluence_client = ConfluenceClient(team_id)
+    confluence_authorization_url = confluence_client.get_authorization_url()
+    google_docs_client = GoogleDocsClient(team_id)
+    google_docs_authorization_url = google_docs_client.get_authorization_url()
 
     try:
         client.views_publish(
@@ -85,74 +90,71 @@ def update_home_tab(context, client, event, logger):
                 "callback_id": "home_view",
                 "blocks": [
                     {
-                        "type": "header",
+                        "type": "section",
                         "text": {
+                            "type": "mrkdwn",
+                            "text": f"Hello User! :wave: \nWelcome to *{bot_name}*, your one-stop solution for managing integrations. We help you connect and streamline your workflow."
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": f"With *{bot_name}*, you can integrate various services seamlessly, making your daily tasks more efficient and connected."
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "Connect to your *Notion* workspace to bring your notes and documents under one roof."
+                        },
+                        "accessory": {
+                            "type": "button",
+                            "text": {
                             "type": "plain_text",
-                            "text": "Integrations",
-                            "emoji": True
+                            "text": "Connect to Notion"
+                            },
+                            "url": f"https://api.notion.com/v1/oauth/authorize?state={team_id}&client_id=4ccd95a3-d835-4e46-9bb0-2a74d425d350&response_type=code&owner=user&redirect_uri={notion_redirect_uri_encoded}",
+                            "value": "add_notion",
+                            "action_id": "add_integration"
                         }
-                    },
-                    {
-                        "type": "divider"
                     },
                     {
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": "Provide access to *@Dhruv* to read your *Notion* pages"
+                            "text": "Integrate *Confluence* workspace to manage and collaborate on your team projects."
                         },
                         "accessory": {
-                            "type": "image",
-                            "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Notion-logo.svg/100px-Notion-logo.svg.png",
-                            "alt_text": "cute cat"
+                            "type": "button",
+                            "text": {
+                            "type": "plain_text",
+                            "text": "Connect to Confluence"
+                            },
+                            "url": f"{confluence_authorization_url}",
+                            "value": "add_confluence",
+                            "action_id": "add_integration"
                         }
-                    },
-                    {
-                        "type": "actions",
-                        "elements": [
-                            {
-                                "type": "button",
-                                "text": {
-                                    "type": "plain_text",
-                                    "text": "Add Access",
-                                    "emoji": True
-                                },
-                                "url": f"https://api.notion.com/v1/oauth/authorize?state={team_id}&client_id=4ccd95a3-d835-4e46-9bb0-2a74d425d350&response_type=code&owner=user&redirect_uri={notion_redirect_uri_encoded}",
-                                "value": "add_notion",
-                                "action_id": "add_integration"
-                            }
-                        ]
                     },
                     {
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": "Provide access to *@Dhruv* to read your *Google* docs"
+                            "text": "Link your *Google Docs* workspace to easily access and share your files across platforms."
                         },
                         "accessory": {
-                            "type": "image",
-                            "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Google_Docs_logo_%282014-2020%29.svg/47px-Google_Docs_logo_%282014-2020%29.svg.png",
-                            "alt_text": "cute cat"
+                            "type": "button",
+                            "text": {
+                            "type": "plain_text",
+                            "text": "Connect to Google Docs"
+                            },
+                            "url": f"{google_docs_authorization_url}",
+                            "value": "add_google_docs",
+                            "action_id": "actionId-0"
                         }
-                    },
-                    {
-                        "type": "actions",
-                        "elements": [
-                            {
-                                "type": "button",
-                                "text": {
-                                    "type": "plain_text",
-                                    "text": "Add Access",
-                                    "emoji": True
-                                },
-                                "value": "click_me_123",
-                                "action_id": "actionId-0"
-                            }
-                        ]
                     }
-                ]
-            }
-        )
+                ]})
     except Exception as e:
         logger.error(f"Error publishing home tab: {e}")
 
@@ -267,9 +269,9 @@ def processURLs(text, meta, thread_id, team_id, bot_token, say, client):
             return
         
         if len(urls) > 1:
-            say(f"Finished reading the links. Let me summarize what I just read.", thread_ts=thread_id)
+            say("Finished reading the links. Let me summarize what I just read.", thread_ts=thread_id)
         else:
-            say(f"Finished reading the link. Let me summarize what I just read.", thread_ts=thread_id)
+            say("Finished reading the link. Let me summarize what I just read.", thread_ts=thread_id)
 
 def processFiles(text, meta, thread_id, team_id, bot_token, say, client):
     if "files" not in meta:
@@ -283,24 +285,23 @@ def processFiles(text, meta, thread_id, team_id, bot_token, say, client):
         file_name = file_url.split("/")[-1]
         say(f"Checking out the file {file_name}. Will let you know when I am done!", thread_ts=thread_id)
 
-        response = requests.get(file_url, headers={'Authorization': f'Bearer {bot_token}'})
+        response = requests.get(file_url, headers={'Authorization': f'Bearer {bot_token}'}, timeout=30)
         with TempFileManager(file_name) as (temp_file_path, temp_file):
             temp_file.write(response.content)
             
             processed = FileProcessor.process(file_type, temp_file_path, thread_id, team_id)
             if not processed:
-                say(f"Sorry, I am not able to read this type of files yet!", thread_ts=thread_id)
+                say("Sorry, I am not able to read this type of files yet!", thread_ts=thread_id)
         
         if text != "":
             return
 
         if len(files) > 1:
-            say(f"Finished reading the files.", thread_ts=thread_id)
+            say("Finished reading the files.", thread_ts=thread_id)
         else:
-            say(f"Finished reading the file.", thread_ts=thread_id)
-        
-        text = text.strip()
+            say("Finished reading the file.", thread_ts=thread_id)
+            text = text.strip()
         if not text:
-            say(f"Let me summarize the content. Please be patient.", thread_ts=thread_id)
+            say("Let me summarize the content. Please be patient.", thread_ts=thread_id)
 
 handler = SlackRequestHandler(app)
