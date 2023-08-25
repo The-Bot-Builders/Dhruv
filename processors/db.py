@@ -14,7 +14,7 @@ db_url = URL.create(
     username=os.getenv("DB_USERNAME"),
     password=os.getenv("DB_PASSWORD")
 )
-db_url_ssl = db_url + f"?sslmode=require&sslrootcert={os.environ.get('DB_ROOT_CERTIFICATE')}" if os.environ.get('STAGE', 'local') == 'prod' else db_url
+# db_url_ssl = db_url + f"?sslmode=require&sslrootcert={os.environ.get('DB_ROOT_CERTIFICATE')}" if os.environ.get('STAGE', 'local') == 'prod' else db_url
 
 engine = create_engine(
     db_url, 
